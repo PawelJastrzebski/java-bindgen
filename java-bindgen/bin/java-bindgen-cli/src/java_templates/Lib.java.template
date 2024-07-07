@@ -1,0 +1,61 @@
+package [[package_name]];
+
+import com.sun.jna.Native;
+import com.sun.jna.Platform;
+
+import java.io.File;
+import java.io.IOException;
+
+public class [[java-class-name]] {
+    private static Boolean loaded = false;
+
+    public static String libName = "[[lib-name]]";
+    public static String libVersion = "[[lib-version]]";
+    public static String libRelease = "[[lib-release-date]]";
+    public static String libPath;
+    public static String libExtension;
+
+[[java-bind-methods]]
+
+    static {
+        [[java-class-name]].loadNativeLibrary();
+    }
+
+    public static void loadNativeLibrary() throws RuntimeException {
+        if (loaded) {
+            return;
+        }
+
+        libExtension = Platform.isWindows() ? ".dll" : Platform.isMac() ? ".dylib" : ".so";
+        String fullLibName = libName + libExtension;
+
+        try {
+            File lib = Native.extractFromResourcePath(fullLibName);
+            libPath = lib.getAbsolutePath();
+            System.load(libPath);
+            loaded = true;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load native library:" + fullLibName);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load native library:" + fullLibName, e);
+        }
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Lib: " + libName + libExtension + " (" + libVersion + ")\nPath: " + libPath + "\n" + libRelease);
+        System.out.println(Lib1.hello("ok"));
+
+        System.out.println(Lib1.helloByte(new byte[1]));
+
+        try {
+            System.out.println(Lib1.ethrow());
+        } catch(Exception e) {
+            System.out.print(e);
+        }
+
+        Object u = Lib1.user();
+        System.out.println(u == null);
+        System.out.println(u);
+    }
+
+}
