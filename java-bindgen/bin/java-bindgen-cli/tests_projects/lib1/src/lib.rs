@@ -1,36 +1,22 @@
 use java_bindgen::prelude::*;
 
-#[derive(Clone)]
-struct User {
-    name: String,
+#[derive(IntoJava)]
+struct UserClass {
     age: i32,
+    name: String,
+    byte_value: u8,
+    class_byte: JByte,
+    array: Vec<u8>
 }
 
-impl<'local> IntoJavaType<'local> for User {
-    type JType = JObject<'local>;
-
-    fn into_java(self, env: &mut jni::JNIEnv<'local>) -> JResult<Self::JType> {
-        let p1 = env.new_string(&self.name).j_catch(env)?;
-        let p1 = JValue::Object(&p1);
-        let p2 = JValue::Int(self.age);
-
-        // let class = env.find_class("java/lang/Integer").unwrap();
-        // let Some(p2) = env.new_object(class, "(Ljava/lang/Integer;)V", &[p2]).j_catch(env) else {
-        //     return None;
-        // };
-        // let p2 = JValue::Object(&p2);
-
-        let class = env.find_class("com/test/User").j_catch(env)?;
-        env.new_object(class, "(Ljava/lang/String;I)V", &[p1, p2])
-            .j_catch(env)
-    }
-}
-
-#[java_bindgen_raw]
-fn user<'local>(mut env: JNIEnv<'local>, _class: JClass<'local>) -> JResult<JObject<'local>> {
-    let user = User {
+#[java_bindgen_raw(return = UserClass)]
+fn user<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
+    let user = UserClass {
         name: "Hello".to_string(),
-        age: 22,
+        age: 220,
+        byte_value: 1,
+        class_byte: JByte(20),
+        array: vec![1, 2, 3]
     };
 
     user.into_java(&mut env)

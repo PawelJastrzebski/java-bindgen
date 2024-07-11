@@ -1,6 +1,6 @@
 use java_bindgen_core::{
     consts::ffi_definitions_path,
-    ffi_store::{FFIStore, JavaFFI},
+    ffi_store::{FFIStore, JavaFFIMethod},
     project_info::ProjectInfo,
 };
 use proc_macro::TokenStream;
@@ -10,33 +10,8 @@ use syn::{
     ReturnType, Token, Type,
 };
 
-use crate::util::{self, parse_attr_to_map, CompileErrors};
+use crate::{types_conversion::rewrite_jni_to_java, util::{self, parse_attr_to_map, CompileErrors}};
 
-// determine java type based on Rust type
-pub fn rewrite_type(type_token: &TokenStream2, errors: &mut CompileErrors) -> Option<String> {
-    let rust_type = type_token.to_string();
-    if rust_type.contains("JNIEnv") {
-        return None;
-    };
-    if rust_type.contains("JClass") {
-        return None;
-    };
-    if rust_type.contains("JString") {
-        return Some("String".to_string());
-    };
-    if rust_type.contains("JObject") {
-        return Some("Object".to_string());
-    };
-    if rust_type.contains("JByteArray") {
-        return Some("byte[]".to_string());
-    };
-
-    errors.add_spaned(
-        type_token.span(),
-        format!("unsupported Java type - use jni types"),
-    );
-    None
-}
 
 // determine java type based on Rust type
 pub fn to_java_type(rust_type: &Type, errors: &mut CompileErrors) -> Option<String> {
@@ -54,7 +29,7 @@ pub fn to_java_type(rust_type: &Type, errors: &mut CompileErrors) -> Option<Stri
         Type::Macro(_) => None,
         Type::Never(_) => add_error("never type"),
         Type::Paren(_) => add_error("parenthesized type"),
-        Type::Path(t) => rewrite_type(&t.to_token_stream(), errors),
+        Type::Path(t) => rewrite_jni_to_java(&t.to_token_stream(), errors),
         Type::Ptr(_) => add_error("*"),
         Type::Reference(_) => add_error("&"),
         Type::Slice(_) => add_error("slice"),
@@ -145,13 +120,14 @@ pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors)
 pub fn produce_java_return(return_type: &ReturnType, errors: &mut CompileErrors) -> String {
     match return_type {
         ReturnType::Default => Some("void".to_string()),
-        ReturnType::Type(_, t) => rewrite_type(&t.to_token_stream(), errors),
+        ReturnType::Type(_, t) => rewrite_jni_to_java(&t.to_token_stream(), errors),
     }
     .unwrap_or("void".to_string())
 }
 
 struct JavaBindgenAttr {
     pub package: String,
+    pub returns: Option<String>,
 }
 
 impl JavaBindgenAttr {
@@ -159,6 +135,7 @@ impl JavaBindgenAttr {
         let map = parse_attr_to_map(attr);
         JavaBindgenAttr {
             package: map.get("package").unwrap_or(&"".to_string()).clone(),
+            returns: map.get("return").cloned().or_else(|| map.get("returns").cloned())
         }
     }
 }
@@ -193,9 +170,8 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
                 .unwrap_or(ReturnType::Default);
 
             let args = produce_java_args(&java_fn.sig.inputs, &mut errors);
-            let return_type = produce_java_return(&return_type, &mut errors);
-            // TODO produce java FFI
-            store.add_ffi(JavaFFI {
+            let return_type = attribute.returns.unwrap_or_else(|| produce_java_return(&return_type, &mut errors));
+            store.add_ffi_method(JavaFFIMethod {
                 id: rust_fn_name.clone(),
                 sig: format!(
                     "public static native {} {}({})",
@@ -229,7 +205,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
                     Err(_) => Default::default(),
                }
             }
-            
+
         };
         return result.into();
     }

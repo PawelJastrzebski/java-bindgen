@@ -6,6 +6,8 @@ import com.sun.jna.Platform;
 import java.io.File;
 import java.io.IOException;
 
+[[class-imports]]
+
 public class [[java-class-name]] {
     private static Boolean loaded = false;
 

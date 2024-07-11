@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{backtrace::Backtrace, fmt::Debug, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub enum JExceptionClass {
@@ -119,26 +119,36 @@ pub type JResult<T, E = JException> = core::result::Result<T, E>;
 
 // JNIEnv Util
 
+macro_rules! jthrow {
+    ( $env:expr => $j_class:expr , $message:tt) => {
+        let error = $env.exception_occurred().unwrap_or_default();
+        if error.is_null() {
+            let message = format!(
+                "\"{}\" [Rust Error]\nRust Backtrace:\n{}\n",
+                &$message,
+                Backtrace::force_capture()
+            );
+            $env.throw_new(($j_class).get_class_path(), &message).ok();
+        }
+    };
+}
+
 #[allow(non_snake_case)]
 pub trait JNIEnvUtils {
-    fn j_throw_cause(&mut self, kind: JExceptionClass, cause: &impl std::error::Error) {
-        self.j_throw_msg(&kind, &format!("{}", cause))
-    }
-    fn j_throw(&mut self, kind: JExceptionClass) {
-        self.j_throw_msg(&kind, &format!("{}", kind))
-    }
-    fn j_throw_msg(&mut self, kind: &JExceptionClass, message: &str);
+    fn j_throw_cause(&mut self, j_class: JExceptionClass, cause: &impl std::error::Error);
+    fn j_throw(&mut self, j_class: JExceptionClass);
+    fn j_throw_msg(&mut self, j_class: &JExceptionClass, message: &str);
 }
 
 impl<'local> JNIEnvUtils for jni::JNIEnv<'local> {
     fn j_throw_msg(&mut self, j_class: &JExceptionClass, message: &str) {
-        if let Some(throwable) = self.exception_occurred().ok() {
-            if throwable.is_null() {
-                self.throw_new(j_class.get_class_path(), message).ok();
-            }
-        } else {
-            self.throw_new(j_class.get_class_path(), message).ok();
-        }
+        jthrow!( self => j_class, message);
+    }
+    fn j_throw_cause(&mut self, j_class: JExceptionClass, cause: &impl std::error::Error) {
+        jthrow!( self => j_class, cause);
+    }
+    fn j_throw(&mut self, j_class: JExceptionClass) {
+        jthrow!( self => j_class, j_class);
     }
 }
 
@@ -152,7 +162,7 @@ impl<'local, T, E: std::error::Error + 'static> JavaCatch<'local, T> for JResult
         match self {
             Ok(ok) => Ok(ok),
             Err(err) => {
-                env.j_throw_cause(JExceptionClass::RuntimeException, &err);
+                jthrow!(env => JExceptionClass::RuntimeException, err);
                 Err(crate::exception::JException::from_std(err))
             }
         }

@@ -16,9 +16,16 @@ id: hello
 sig: public static native String hello(String input)
 */
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct JavaFFI {
+pub struct JavaFFIMethod {
     pub id: String,
     pub sig: String,
+}
+
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct JavaFFIClass {
+    pub id: String,
+    // Type, name
+    pub fields: Vec<(String, String)>,
 }
 
 #[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
@@ -29,17 +36,27 @@ pub struct FFIStore {
     file_path: Option<PathBuf>,
     #[serde(skip)]
     file_lock: Option<File>,
-    methods: Vec<JavaFFI>,
+    methods: Vec<JavaFFIMethod>,
+    classes: Vec<JavaFFIClass>,
 }
 
 impl FFIStore {
-    pub fn add_ffi(&mut self, ffi: JavaFFI) {
-        self.methods.retain(|i| i.id != ffi.id);
-        self.methods.push(ffi);
+    pub fn add_ffi_method(&mut self, method: JavaFFIMethod) {
+        self.methods.retain(|i| i.id != method.id);
+        self.methods.push(method);
     }
 
-    pub fn get_all(&self) -> Vec<JavaFFI> {
+    pub fn add_ffi_class(&mut self, class: JavaFFIClass) {
+        self.classes.retain(|i| i.id != class.id);
+        self.classes.push(class);
+    }
+
+    pub fn get_methods(&self) -> Vec<JavaFFIMethod> {
         return self.methods.clone();
+    }
+
+    pub fn get_classes(&self) -> Vec<JavaFFIClass> {
+        return self.classes.clone();
     }
 
     pub fn path(&self) -> Option<PathBuf> {
@@ -96,7 +113,7 @@ impl Drop for FFIStore {
 
 #[cfg(test)]
 pub mod tests {
-    use super::{FFIStore, JavaFFI};
+    use super::{FFIStore, JavaFFIMethod};
     use std::{fs, path::Path};
 
     pub fn create_test_store() -> FFIStore {
@@ -119,7 +136,7 @@ pub mod tests {
     #[test]
     pub fn should_save_to_store() {
         let mut store = create_test_store();
-        store.add_ffi(JavaFFI {
+        store.add_ffi_method(JavaFFIMethod {
             id: "test_id".to_string(),
             sig: "sig".to_string(),
         });

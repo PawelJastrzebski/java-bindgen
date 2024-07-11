@@ -6,6 +6,8 @@ use proc_macro::TokenStream;
 mod util;
 mod derive_java_bindgen;
 mod derive_java_bindgen_raw;
+mod dervie_into_java;
+mod types_conversion;
 
 #[proc_macro_attribute]
 pub fn java_bindgen(attr: TokenStream, item: TokenStream) -> TokenStream {
@@ -15,4 +17,9 @@ pub fn java_bindgen(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn java_bindgen_raw(attr: TokenStream, item: TokenStream) -> TokenStream {
     derive_java_bindgen_raw::main(attr, item)
+}
+
+#[proc_macro_derive(IntoJava)]
+pub fn java_bindgen_into_java(item: TokenStream) -> TokenStream {
+    dervie_into_java::main(item)
 }

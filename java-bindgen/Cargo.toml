@@ -8,5 +8,4 @@ rust-version = "1.70"
 
 [dependencies]
 jni = "0.21"
-serde = { version = "1", features = ["derive"] }
 java-bindgen-macro = { path = "./bin/java-bindgen-macro" }

@@ -18,20 +18,55 @@ pub struct RustBinaryInfo {
 }
 
 static JAVA_LIB_TEMPLATE: &str = include_str!("./java_templates/Lib.java.template");
+static JAVA_CLASS_TEMPLATE: &str = include_str!("./java_templates/Class.java.template");
 static POM_TEMPLATE: &str = include_str!("./java_templates/pom.xml.template");
 
-pub fn process_template(content: &str, project_info: &ProjectInfo, ffi: &FFIStore) -> String {
+pub struct JavaClass {
+    file_name: String,
+    class_import: String,
+    file_content: String,
+}
+
+pub fn produce_java_classes(project_info: &ProjectInfo, ffi: &FFIStore) -> Vec<JavaClass> {
+    let mut result = vec![];
+    for class in ffi.get_classes() {
+
+        let class_fields: Vec<String> = class.fields.iter().map(|f| {
+            format!("\t{} {};", f.1, f.0)
+        }).collect();
+
+        let file_content = JAVA_CLASS_TEMPLATE
+            .replace("[[package_name]]", &project_info.java_package_name)
+            .replace("[[java-class-name]]", &class.id)
+            .replace("[[java-class-fields]]", &class_fields.join("\n"));
+
+        result.push(JavaClass {
+            file_name: format!("{}.java", &class.id),
+            file_content,
+            class_import: format!("import {}.{};", &project_info.java_package_name, &class.id),
+        })
+    }
+
+    result
+}
+
+pub fn process_template(template: &str, project_info: &ProjectInfo, ffi: &FFIStore, java_clesses: &Vec<JavaClass>) -> String {
     let date = chrono::Local::now();
     let release_date = date.format("%Y-%m-%d %H:%M:%S").to_string();
-    content
+
+    let class_imports: Vec<String> = java_clesses.iter().map(|class| class.class_import.clone()).collect();
+    let class_imports = class_imports.join("\n");
+ 
+    template
         .replace("[[package_name]]", &project_info.java_package_name)
+        .replace("[[class-imports]]", &class_imports)
         .replace("[[lib-name]]", &project_info.lib_name)
         .replace("[[lib-version]]", &project_info.lib_version)
         .replace("[[java-class-name]]", &project_info.get_java_class_name())
         .replace("[[lib-release-date]]", &release_date)
         .replace(
             "[[java-bind-methods]]",
-            &ffi.get_all()
+            &ffi.get_methods()
                 .into_iter()
                 .map(|m| format!("\t{};", m.sig))
                 .collect::<Vec<String>>()
@@ -71,12 +106,13 @@ pub fn setup_java_project(
     // Create directory
     let java_dir = create_or_get_dir(java_dir)?;
     let ffi_store = FFIStore::open_read_only(&consts::ffi_definitions_path(&project_dir));
+    let java_classes = produce_java_classes(&project_info, &ffi_store);
 
     // Create pom
     create_file(
         &java_dir,
         "pom.xml",
-        &process_template(POM_TEMPLATE, &project_info, &ffi_store),
+        &process_template(POM_TEMPLATE, &project_info, &ffi_store, &java_classes),
     )?;
 
     let src = create_or_get_dir(&java_dir.join("src"))?;
@@ -94,8 +130,17 @@ pub fn setup_java_project(
     create_file(
         &lib_java_class_directory,
         &format!("{}.java", project_info.get_java_class_name()),
-        &process_template(JAVA_LIB_TEMPLATE, &project_info, &ffi_store),
+        &process_template(JAVA_LIB_TEMPLATE, &project_info, &ffi_store, &java_classes),
     )?;
+
+    // Create classes
+    for class in java_classes.into_iter() {
+        create_file(
+            &lib_java_class_directory,
+            &class.file_name,
+            &class.file_content,
+        )?;
+    }
 
     Ok(())
 }

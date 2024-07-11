@@ -5,7 +5,7 @@ use std::{path::Path, str::FromStr};
 use quote::{format_ident, quote, ToTokens};
 use syn::{Ident, ItemFn, ItemStruct, ReturnType, Visibility, __private::TokenStream2, spanned::Spanned};
 
-use crate::util::{self, comment, parse_attr_to_map, parse_fn_args};
+use crate::util::{self, comment, parse_attr_to_map, parse_fn_args, CompileErrors};
 
 struct JavaBindgenAttr {
     pub package: String,
@@ -22,6 +22,9 @@ impl JavaBindgenAttr {
 
 pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(java_fn) = syn::parse::<syn::ItemFn>(item.clone()) {
+        let mut errors = CompileErrors::default();
+        errors.add("Not implemented: use [java_bindgen_raw]".to_string());
+
         let source = TokenStream2::from(item.clone());
         let attribute = JavaBindgenAttr::parse_attr(attr.clone());
         let project_dir = std::path::Path::new(".");
@@ -37,13 +40,14 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
                 }.into();
             },
         };
+
         // Create project info
         let project_info = ProjectInfo::from(&cargo_toml).set_package_name(&attribute.package);
         let _attr = parse_fn_args(&java_fn);
         let java_fn_name = format_ident!("{}", project_info.get_java_method_name(&java_fn.sig.ident.to_string()));
         let java_fn_args = quote! {};
         let java_fn_body = quote! {};
-        let java_impl = quote! { 
+        let _java_impl = quote! { 
             #[no_mangle]
             pub extern "system" fn #java_fn_name<'local>(
                 mut env: jni::JNIEnv<'local>,
@@ -55,9 +59,13 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         };
 
         let res = quote! {
+
+            #errors
+
             #source
-            #[automatically_derived]
-            #java_impl
+            
+            // #[automatically_derived]
+            // #java_impl
         };
         return res.into();
     

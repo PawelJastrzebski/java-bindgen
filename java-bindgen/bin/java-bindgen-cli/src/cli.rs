@@ -89,6 +89,9 @@ pub fn cli() -> color_eyre::Result<()> {
         crate::commands::run_jar(&project_path)?
     }
 
-    print_help();
+    if matches.subcommand().is_none() {
+        print_help();
+    }
+
     Ok(())
 }

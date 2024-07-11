@@ -11,3 +11,9 @@ package = "com.test"
 
 [lib]
 crate-type = ["cdylib"]
+
+
+[profile.dev]
+opt-level = 0
+debug = 1
+incremental = true

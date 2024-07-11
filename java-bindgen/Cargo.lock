@@ -94,7 +94,6 @@ version = "0.1.0"
 dependencies = [
  "java-bindgen-macro",
  "jni",
- "serde",
 ]
 
 [[package]]
