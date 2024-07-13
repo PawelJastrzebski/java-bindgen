@@ -9,3 +9,6 @@ rust-version = "1.70"
 [dependencies]
 jni = "0.21"
 java-bindgen-macro = { path = "./bin/java-bindgen-macro" }
+
+[dev-dependencies]
+jni = { version = "0.21", features = ["invocation"] }

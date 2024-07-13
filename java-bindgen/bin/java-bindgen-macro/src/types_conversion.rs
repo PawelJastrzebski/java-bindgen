@@ -1,12 +1,36 @@
 use crate::util::CompileErrors;
 use syn::{__private::TokenStream2, spanned::Spanned};
+use quote::quote;
 
-// determine Java type based on Rust jni type
-pub fn rewrite_jni_to_java(
-    type_token: &TokenStream2,
-    errors: &mut CompileErrors,
-) -> Option<String> {
-    let rust_type = type_token.to_string();
+// rewrite [JNI Rust] to [Java Type]
+pub fn rewrite_jni_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Option<String> {
+    let rust_type = ty.to_string();
+    // jni primitives
+    if rust_type.contains("jbyte") {
+        return Some("byte".to_string());
+    };
+    if rust_type.contains("jchar") {
+        return Some("char".to_string());
+    };
+    if rust_type.contains("jboolean") {
+        return Some("boolean".to_string());
+    };
+    if rust_type.contains("jint") {
+        return Some("int".to_string());
+    };
+    if rust_type.contains("jshort") {
+        return Some("short".to_string());
+    };
+    if rust_type.contains("jlong") {
+        return Some("long".to_string());
+    };
+    if rust_type.contains("jfloat") {
+        return Some("float".to_string());
+    };
+    if rust_type.contains("double") {
+        return Some("double".to_string());
+    };
+
     if rust_type.contains("JNIEnv") {
         return None;
     };
@@ -23,20 +47,22 @@ pub fn rewrite_jni_to_java(
         return Some("byte[]".to_string());
     };
 
-    errors.add_spaned(
-        type_token.span(),
-        format!("unsupported Java type. (use jni types)"),
-    );
+    // jni class primitives
+    if rust_type.contains("JByte") {
+        return Some("Byte".to_string());
+    };
+    if rust_type.contains("String") {
+        return Some("String".to_string());
+    };
+
+    errors.add_spaned(ty.span(), format!("unsupported Java type. (use jni types)"));
     None
 }
 
-// determine Java type based on Rust jni type
-pub fn rewrite_rust_to_java(
-    type_token: &TokenStream2,
-    errors: &mut CompileErrors,
-) -> Option<String> {
-    let rust_type = type_token.to_string().replace(" ", "");
-    // primitive
+// rewrite [Rust Type] to [Java Type]
+pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Option<String> {
+    let rust_type = ty.to_string().replace(" ", "");
+    // primitives
     if rust_type == "u8" {
         return Some("byte".to_string());
     };
@@ -92,6 +118,20 @@ pub fn rewrite_rust_to_java(
         return Some("byte[]".to_string());
     };
 
-    errors.add_spaned(type_token.span(), format!("unsupported type. {}", rust_type));
+    errors.add_spaned(ty.span(), format!("unsupported type. {}", rust_type));
+    None
+}
+
+// Revirte [Rust Type] to [JNI Rust]
+pub fn rewrite_rust_type_to_jni(
+    ty: &TokenStream2,
+    lifetime: &TokenStream2,
+    errors: &mut CompileErrors,
+) -> Option<TokenStream2> {
+    let rust_type = ty.to_string().replace(" ", "");
+    // primitives
+    if rust_type == "String" {
+        return Some(quote! { jni::objects::JString #lifetime })
+    };
     None
 }

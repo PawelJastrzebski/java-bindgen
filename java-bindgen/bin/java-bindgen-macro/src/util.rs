@@ -3,7 +3,7 @@ use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::collections::HashMap;
 use std::str::FromStr;
 use syn::__private::TokenStream2;
-use syn::{FnArg, ItemFn, PatType};
+use syn::{FnArg, ItemFn, Lifetime, PatType};
 
 pub fn parse_attr_to_map(attr: TokenStream) -> HashMap<String, String> {
     let mut map: HashMap<String, String> = HashMap::new();
@@ -67,6 +67,10 @@ pub fn comment(msg: &str) -> TokenStream2 {
     TokenStream2::from_str(&comment).expect("comment")
 }
 
+pub fn ts2(tokens: &str) -> TokenStream2 {
+    TokenStream2::from_str(&tokens).expect("valid TokenStream2")
+}
+
 pub fn parse_project_toml(
     project_dir: &std::path::Path,
 ) -> Result<java_bindgen_core::cargo_parser::CargoToml, String> {
@@ -94,4 +98,23 @@ pub fn parse_project_toml(
             return Err(err.to_string());
         }
     }
+}
+
+
+pub fn lifetime_from_type(ty: &syn::Type) -> Option<TokenStream2> {
+
+    if let syn::Type::Path(syn::TypePath { ref path, .. }) = ty {
+
+        for segment in &path.segments {
+            if let syn::PathArguments::AngleBracketed(ref args) = &segment.arguments {
+                for arg in &args.args {
+                    if let syn::GenericArgument::Lifetime(lifetime) = arg {
+                        return Some(quote! {<#lifetime>}.into());
+                    }
+                }
+            }
+        }
+    }
+
+    None
 }

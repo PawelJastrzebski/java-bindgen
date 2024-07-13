@@ -1,5 +1,9 @@
 use std::{backtrace::Backtrace, fmt::Debug, rc::Rc};
 
+use jni::errors::Exception;
+
+use crate::prelude::IntoJavaType;
+
 #[derive(Debug, Clone)]
 pub enum JExceptionClass {
     RuntimeException,
@@ -102,6 +106,19 @@ impl std::fmt::Debug for JException {
 
 pub type JResult<T, E = JException> = core::result::Result<T, E>;
 
+pub fn j_result_handler<'a, T, E>(result: JResult<T, E>, env: &mut jni::JNIEnv<'a>) -> T::JType
+where
+    T: IntoJavaType<'a> + Default,
+{
+    match result {
+        Ok(ok) => match ok.into_java(env) {
+            Ok(ok) => ok,
+            Err(_) => Default::default(),
+        },
+        Err(_) => Default::default(),
+    }
+}
+
 // Macro Util
 
 // #[macro_export]
@@ -166,5 +183,39 @@ impl<'local, T, E: std::error::Error + 'static> JavaCatch<'local, T> for JResult
                 Err(crate::exception::JException::from_std(err))
             }
         }
+    }
+}
+// TODO test feature + utils (core?)
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+
+    #[test]
+    pub fn start_jvm() -> jni::errors::Result<()> {
+        let jvm_args = jni::InitArgsBuilder::new()
+            .version(jni::JNIVersion::V8)
+            .option("-Xcheck:jni")
+            .build()
+            .expect("Failed to parse JVM args");
+        let jvm = jni::JavaVM::new(jvm_args).expect("Failed to start test JVM");
+        let mut env = jvm.attach_current_thread()?;
+
+        #[allow(non_snake_case)]
+        fn user<'a>(env: &mut JNIEnv<'a>, _class: JClass<'_>) -> JResult<String> {
+            Ok("ok".to_string())
+        }
+
+        #[no_mangle]
+        #[allow(unused_mut, non_snake_case)]
+        pub extern "system" fn Java_com_test_Lib1_user<'a>(
+            mut env: JNIEnv<'a>,
+            _class: JClass<'_>,
+        ) -> jni::sys::jobject {
+            let r = user(&mut env, _class);
+            j_result_handler(r, &mut env).as_raw()
+        }
+
+        Ok(())
     }
 }

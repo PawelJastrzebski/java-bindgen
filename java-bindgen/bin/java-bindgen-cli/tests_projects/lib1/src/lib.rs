@@ -10,7 +10,7 @@ struct UserClass {
 }
 
 #[java_bindgen_raw(return = UserClass)]
-fn user<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
+fn user_raw<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
     let user = UserClass {
         name: "Hello".to_string(),
         age: 220,
@@ -20,6 +20,11 @@ fn user<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
     };
 
     user.into_java(&mut env)
+}
+
+#[java_bindgen_raw2]
+fn user<'a>(env: &mut JNIEnv<'a>) -> JResult<String> {
+    Ok("String ok".to_string())
 }
 
 #[java_bindgen_raw]
@@ -37,20 +42,35 @@ pub fn ethrow<'local>(
     // ]).unwrap();
 
     let class = env.find_class("java/lang/String").unwrap();
-    env.new_object(class, "(Ljava/lang/String;)V", &[JValue::Object(&r)])
+    env.new_object(class, "(Ljava/lang/String;)V", &[jni::objects::JValue::Object(&r)])
         .j_catch(&mut env)
 }
 
-#[java_bindgen_raw]
-fn hello<'local>(
-    mut env: JNIEnv<'local>,
-    _class: JClass<'local>,
-    input: JString<'local>,
-) -> JResult<JString<'local>> {
-    let input = input.into_rust(&mut env)?;
-    let r = format!("Hello Java Bindgen, {}!", input);
-    r.into_java(&mut env)
+
+#[java_bindgen_raw2]
+fn hello_1<'aa>(env: &mut JNIEnv<'aa>, input: JString<'aa>) -> JResult<String> {
+    let input = input.into_rust(env)?;
+    Ok(format!("Hello Java Bindgen 222, {}!", input))
 }
+
+#[java_bindgen_raw2]
+fn hello(input: String) -> JResult<String> {
+    Ok(format!("Hello Java java_bindgen_raw2 222 FullAuto, {}!", input))
+}
+
+
+
+
+// #[java_bindgen_raw]
+// fn hello<'local>(
+//     mut env: JNIEnv<'local>,
+//     _class: JClass<'local>,
+//     input: JString<'local>,
+// ) -> JResult<JString<'local>> {
+//     let input = input.into_rust(&mut env)?;
+//     let r = format!("Hello Java Bindgen, {}!", input);
+//     r.into_java(&mut env)
+// }
 
 #[java_bindgen_raw]
 pub fn helloByte<'local>(
