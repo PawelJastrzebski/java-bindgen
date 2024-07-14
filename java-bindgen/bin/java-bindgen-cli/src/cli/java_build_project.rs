@@ -3,12 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use super::{cli_utils::{self, create_file}, java_templates::build::*};
 use color_eyre::eyre::Context;
 use java_bindgen_core::{
     consts, ffi_store::FFIStore, project_info::ProjectInfo, utils::create_or_get_dir,
 };
-
-use crate::utils::{self};
 
 #[derive(Debug, Default)]
 pub struct RustBinaryInfo {
@@ -16,10 +15,6 @@ pub struct RustBinaryInfo {
     pub mac_binary_path: Option<PathBuf>,
     pub windows_binary_path: Option<PathBuf>,
 }
-
-static JAVA_LIB_TEMPLATE: &str = include_str!("./java_templates/Lib.java.template");
-static JAVA_CLASS_TEMPLATE: &str = include_str!("./java_templates/Class.java.template");
-static POM_TEMPLATE: &str = include_str!("./java_templates/pom.xml.template");
 
 pub struct JavaClass {
     file_name: String,
@@ -30,10 +25,11 @@ pub struct JavaClass {
 pub fn produce_java_classes(project_info: &ProjectInfo, ffi: &FFIStore) -> Vec<JavaClass> {
     let mut result = vec![];
     for class in ffi.get_classes() {
-
-        let class_fields: Vec<String> = class.fields.iter().map(|f| {
-            format!("\t{} {};", f.1, f.0)
-        }).collect();
+        let class_fields: Vec<String> = class
+            .fields
+            .iter()
+            .map(|f| format!("\t{} {};", f.1, f.0))
+            .collect();
 
         let file_content = JAVA_CLASS_TEMPLATE
             .replace("[[package_name]]", &project_info.java_package_name)
@@ -50,13 +46,21 @@ pub fn produce_java_classes(project_info: &ProjectInfo, ffi: &FFIStore) -> Vec<J
     result
 }
 
-pub fn process_template(template: &str, project_info: &ProjectInfo, ffi: &FFIStore, java_clesses: &Vec<JavaClass>) -> String {
-    let date = chrono::Local::now();
-    let release_date = date.format("%Y-%m-%d %H:%M:%S").to_string();
+pub fn process_template(
+    template: &str,
+    project_info: &ProjectInfo,
+    ffi: &FFIStore,
+    java_clesses: &Vec<JavaClass>,
+) -> String {
+    let date = chrono::Local::now().to_utc();
+    let release_date = date.format("%Y-%m-%d %H:%M:%S UTC").to_string();
 
-    let class_imports: Vec<String> = java_clesses.iter().map(|class| class.class_import.clone()).collect();
+    let class_imports: Vec<String> = java_clesses
+        .iter()
+        .map(|class| class.class_import.clone())
+        .collect();
     let class_imports = class_imports.join("\n");
- 
+
     template
         .replace("[[package_name]]", &project_info.java_package_name)
         .replace("[[class-imports]]", &class_imports)
@@ -72,12 +76,6 @@ pub fn process_template(template: &str, project_info: &ProjectInfo, ffi: &FFISto
                 .collect::<Vec<String>>()
                 .join("\n"),
         )
-}
-
-fn create_file(directory: &Path, file_name: &str, content: &str) -> color_eyre::Result<PathBuf> {
-    let file_path = directory.join(file_name);
-    fs::write(&file_path, content).wrap_err(format!("Failed to create {file_name} file "))?;
-    Ok(file_path)
 }
 
 fn copy_binary(
@@ -173,7 +171,8 @@ pub fn build_jar(
 
     // Build Jar
 
-    utils::exec_command(&java_dir, "mvn compile assembly:single", "Jar")
+    // cli_utils::exec_command(&java_dir, "mvn clean install -U", "Clean cache")?;
+    cli_utils::exec_command(&java_dir, "mvn clean install compile assembly:single -U", "Jar")
 }
 
 fn get_file_if_exist(file: &Path) -> Option<PathBuf> {
@@ -206,6 +205,7 @@ pub fn find_native_lib(lib_name: &str, rust_project_path: &Path) -> RustBinaryIn
         return RustBinaryInfo::default();
     }
 
+    // todo other build targets
     let release_dir = target_dir.join("release");
     let debug_dir = target_dir.join("debug");
 

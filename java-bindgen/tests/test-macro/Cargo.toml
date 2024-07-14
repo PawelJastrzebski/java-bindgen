@@ -1,0 +1,13 @@
+[package]
+name = "test-macro"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+java-bindgen = { path = "./../../"}
+
+[package.java-bindgen.metadata]
+package = "com.test.macro"
+
+[lib]
+crate-type = ["cdylib"]

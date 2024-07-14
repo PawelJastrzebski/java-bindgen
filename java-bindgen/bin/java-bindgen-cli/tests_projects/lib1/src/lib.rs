@@ -10,7 +10,7 @@ struct UserClass {
 }
 
 #[java_bindgen_raw(return = UserClass)]
-fn user_raw<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
+fn user<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
     let user = UserClass {
         name: "Hello".to_string(),
         age: 220,
@@ -22,9 +22,14 @@ fn user_raw<'a>(mut env: JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>>
     user.into_java(&mut env)
 }
 
-#[java_bindgen_raw2]
-fn user<'a>(env: &mut JNIEnv<'a>) -> JResult<String> {
+#[java_bindgen]
+fn user_raw<'a>(env: &mut JNIEnv<'a>) -> JResult<String> {
     Ok("String ok".to_string())
+}
+
+#[java_bindgen]
+fn user1<'a>(env: &mut JNIEnv<'a>) -> JResult<jbyte> {
+    Ok(127)
 }
 
 #[java_bindgen_raw]
@@ -47,18 +52,16 @@ pub fn ethrow<'local>(
 }
 
 
-#[java_bindgen_raw2]
+#[java_bindgen]
 fn hello_1<'aa>(env: &mut JNIEnv<'aa>, input: JString<'aa>) -> JResult<String> {
     let input = input.into_rust(env)?;
     Ok(format!("Hello Java Bindgen 222, {}!", input))
 }
 
-#[java_bindgen_raw2]
+#[java_bindgen]
 fn hello(input: String) -> JResult<String> {
-    Ok(format!("Hello Java java_bindgen_raw2 222 FullAuto, {}!", input))
+    Ok(format!("Hello Java java_bindgen 4444 FullAuto, {}!", input))
 }
-
-
 
 
 // #[java_bindgen_raw]
@@ -76,7 +79,7 @@ fn hello(input: String) -> JResult<String> {
 pub fn helloByte<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
-    input: JByteArray<'local>,
+    input: jni::objects::JByteArray<'local>,
 ) -> JResult<JByteArray<'local>> {
     let _input = input.into_rust(&mut env)?;
     let buf = [1; 2000];

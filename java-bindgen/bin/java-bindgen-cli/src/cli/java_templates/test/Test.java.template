@@ -1,0 +1,15 @@
+package bindgen;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class [[java-class-name]]Test {
+
+    @Test
+    public void your_first_test() {
+        // TODO
+    }
+
+}
+

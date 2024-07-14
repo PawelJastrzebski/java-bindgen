@@ -1,5 +1,5 @@
 
-### Build tool local
+### Build CLI local
 ```
 cargo install --path .
 ```

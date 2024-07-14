@@ -29,12 +29,12 @@ pub fn produce_java_args(
     args
 }
 
-pub fn produce_java_return(return_type: &ReturnType, errors: &mut CompileErrors) -> String {
-    match return_type {
-        ReturnType::Default => Some("void".to_string()),
-        ReturnType::Type(_, t) => rewrite_jni_to_java(&t.to_token_stream(), errors),
+pub fn produce_java_return(return_type: &TokenStream2, errors: &mut CompileErrors) -> String {
+    if let Some(new_type) = rewrite_jni_to_java(&return_type, errors) {
+        return new_type;
     }
-    .unwrap_or("void".to_string())
+
+    "void".to_string()
 }
 
 pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors) -> TokenStream2 {
@@ -50,12 +50,12 @@ pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors)
                         ),
                     );
 
-                    return quote! { -> #r_type };
+                    return quote! { #r_type };
                 }
 
                 if let syn::PathArguments::AngleBracketed(ref arg) = segment.arguments {
                     let inner_type = arg.args.to_token_stream();
-                    return quote! { -> #inner_type};
+                    return quote! { #inner_type};
                 }
             }
         }

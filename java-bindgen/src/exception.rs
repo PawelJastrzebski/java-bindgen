@@ -1,7 +1,5 @@
 use std::{backtrace::Backtrace, fmt::Debug, rc::Rc};
 
-use jni::errors::Exception;
-
 use crate::prelude::IntoJavaType;
 
 #[derive(Debug, Clone)]
@@ -119,21 +117,6 @@ where
     }
 }
 
-// Macro Util
-
-// #[macro_export]
-// macro_rules! java_try {
-//     ($($code:tt)*) => {
-//         let mut _inner = || {
-//             $($code)*
-//         };
-//         let Some(res) = _inner() else {
-//             return Default::default()
-//         };
-//         return res;
-//     };
-// }
-
 // JNIEnv Util
 
 macro_rules! jthrow {
@@ -185,37 +168,38 @@ impl<'local, T, E: std::error::Error + 'static> JavaCatch<'local, T> for JResult
         }
     }
 }
-// TODO test feature + utils (core?)
 
 #[cfg(test)]
 mod tests {
+    use crate as java_bindgen;
     use crate::prelude::*;
 
-    #[test]
-    pub fn start_jvm() -> jni::errors::Result<()> {
-        let jvm_args = jni::InitArgsBuilder::new()
-            .version(jni::JNIVersion::V8)
-            .option("-Xcheck:jni")
-            .build()
-            .expect("Failed to parse JVM args");
-        let jvm = jni::JavaVM::new(jvm_args).expect("Failed to start test JVM");
-        let mut env = jvm.attach_current_thread()?;
+    #[allow(non_snake_case)]
+    fn user<'a>(_: &mut JNIEnv<'a>, _class: JClass<'_>) -> JResult<String> {
+        Ok("ok".to_string())
+    }
 
-        #[allow(non_snake_case)]
-        fn user<'a>(env: &mut JNIEnv<'a>, _class: JClass<'_>) -> JResult<String> {
-            Ok("ok".to_string())
-        }
+    #[no_mangle]
+    #[allow(unused_mut, non_snake_case)]
+    pub extern "system" fn Java_com_test_Lib1_user<'a>(
+        mut env: JNIEnv<'a>,
+        _class: JClass<'_>,
+    ) -> jni::objects::JString<'a> {
+        let r = user(&mut env, _class);
+        j_result_handler(r, &mut env)
+    }
 
-        #[no_mangle]
-        #[allow(unused_mut, non_snake_case)]
-        pub extern "system" fn Java_com_test_Lib1_user<'a>(
-            mut env: JNIEnv<'a>,
-            _class: JClass<'_>,
-        ) -> jni::sys::jobject {
-            let r = user(&mut env, _class);
-            j_result_handler(r, &mut env).as_raw()
-        }
-
+    #[test_jvm]
+    fn should_return_ok<'a>(
+        test_env: &mut JNIEnv<'a>,
+        env: JNIEnv<'a>,
+        class: JClass,
+    ) -> JResult<()> {
+        // Call Java function
+        let result = Java_com_test_Lib1_user(env, class);
+        // Convert result into rust
+        let result = result.into_rust(test_env)?;
+        assert_eq!(&result, "ok");
         Ok(())
     }
 }

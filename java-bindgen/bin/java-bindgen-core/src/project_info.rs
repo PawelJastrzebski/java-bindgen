@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 
 #[derive(Debug)]
 pub struct ProjectInfo {
@@ -16,6 +18,10 @@ impl ProjectInfo {
 }
 
 impl ProjectInfo {
+
+    pub fn tests_java_dir_name(&self) -> PathBuf {
+        PathBuf::from("tests_java")
+    }
 
     pub fn jar_asymbly_name(&self) -> String {
         format!(

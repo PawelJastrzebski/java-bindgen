@@ -1,9 +1,9 @@
+use java_bindgen_core::cargo_parser::{parse_toml, CargoToml, CargoTomlFile};
 use proc_macro::TokenStream;
 use quote::{quote, quote_spanned, ToTokens, TokenStreamExt};
 use std::collections::HashMap;
 use std::str::FromStr;
 use syn::__private::TokenStream2;
-use syn::{FnArg, ItemFn, Lifetime, PatType};
 
 pub fn parse_attr_to_map(attr: TokenStream) -> HashMap<String, String> {
     let mut map: HashMap<String, String> = HashMap::new();
@@ -52,47 +52,34 @@ impl CompileErrors {
     }
 }
 
-pub fn parse_fn_args(lazy_fn: &ItemFn) -> Vec<&PatType> {
-    let mut fields = vec![];
-    for t in lazy_fn.sig.inputs.iter() {
-        if let FnArg::Typed(t) = t {
-            fields.push(t)
-        }
-    }
-    fields
-}
-
-pub fn comment(msg: &str) -> TokenStream2 {
-    let comment = format!("const comment: &str = r###\"{msg}\"###;");
-    TokenStream2::from_str(&comment).expect("comment")
-}
-
 pub fn ts2(tokens: &str) -> TokenStream2 {
     TokenStream2::from_str(&tokens).expect("valid TokenStream2")
 }
 
-pub fn parse_project_toml(
-    project_dir: &std::path::Path,
-) -> Result<java_bindgen_core::cargo_parser::CargoToml, String> {
-    let toml_file_path = project_dir.join("Cargo.toml");
-    match java_bindgen_core::cargo_parser::parse_toml(&toml_file_path) {
-        Ok(info) => {
+pub fn parse_project_toml(project_dir: &std::path::Path) -> Result<CargoToml, String> {
+    match parse_toml(&project_dir.join("Cargo.toml")) {
+        Ok(CargoTomlFile {
+            toml_parsed,
+            toml_path,
+            ..
+        }) => {
             let example =
                 "\n\nExample:\n[package.java-bindgen.metadata]\npackage = \"com.java.package\"\n\n";
-            if info.java_bindgen().is_none() {
+            if toml_parsed.java_bindgen().is_none() {
                 return Err(format!(
-                    "Add java-bindgen metadata in your Cargo.toml file. {example}"
+                    "Add java-bindgen metadata in your Cargo.toml file. {example}\nfile:{}",
+                    toml_path.to_string_lossy()
                 ));
             }
 
-            let config = info.java_bindgen().expect("To be checked");
+            let config = toml_parsed.java_bindgen().expect("To be checked");
             if config.package.is_none() {
                 return Err(format!(
                     "Add: package = \"com.java.package\" in your Cargo.toml file.{example}"
                 ));
             }
 
-            Ok(info)
+            Ok(toml_parsed)
         }
         Err(err) => {
             return Err(err.to_string());
@@ -100,11 +87,8 @@ pub fn parse_project_toml(
     }
 }
 
-
 pub fn lifetime_from_type(ty: &syn::Type) -> Option<TokenStream2> {
-
     if let syn::Type::Path(syn::TypePath { ref path, .. }) = ty {
-
         for segment in &path.segments {
             if let syn::PathArguments::AngleBracketed(ref args) = &segment.arguments {
                 for arg in &args.args {

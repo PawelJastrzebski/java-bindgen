@@ -6,9 +6,9 @@ description = "Java Bindgen"
 license = "MIT"
 rust-version = "1.70"
 
-[dependencies]
-jni = "0.21"
-java-bindgen-macro = { path = "./bin/java-bindgen-macro" }
+[features]
+jvm = []
 
-[dev-dependencies]
+[dependencies]
 jni = { version = "0.21", features = ["invocation"] }
+java-bindgen-macro = { path = "./bin/java-bindgen-macro" }

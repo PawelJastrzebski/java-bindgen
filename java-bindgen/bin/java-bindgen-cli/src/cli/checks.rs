@@ -1,10 +1,8 @@
 use std::path::Path;
 
-use java_bindgen_core::cargo_parser::{parse_toml, JavaBindgen, Lib};
+use java_bindgen_core::cargo_parser::{parse_toml, CargoTomlFile, JavaBindgen, Lib};
 
-use crate::utils::{
-        self, flabel, header, icon, print_option, ready_info, COLOR_GREEN, COLOR_RED
-    };
+use super::cli_utils::{self, flabel, header, icon, print_option, ready_info, COLOR_GREEN, COLOR_RED};
 
 pub struct SystemSetupStatus {
     pub java_version: Option<String>,
@@ -17,8 +15,16 @@ impl SystemSetupStatus {
     pub fn pretty_print(&self) {
         print_option("Java", self.java_version.as_ref(), true);
         print_option("Maven", self.mvn_version.as_ref(), true);
-        print_option("Cargo", self.cargo_version.as_ref(), self.gradle_version.is_none());
-        print_option("Gradle", self.gradle_version.as_ref(), self.cargo_version.is_none());
+        print_option(
+            "Cargo",
+            self.cargo_version.as_ref(),
+            self.gradle_version.is_none(),
+        );
+        print_option(
+            "Gradle",
+            self.gradle_version.as_ref(),
+            self.cargo_version.is_none(),
+        );
     }
 
     pub fn is_ready(&self) -> bool {
@@ -32,7 +38,7 @@ impl SystemSetupStatus {
     }
 
     fn check_java(dir: &Path) -> Option<String> {
-        let (code, out, _err) = utils::exec_command_silent(&dir, "java --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "java --version");
         if code != 0 {
             return None;
         }
@@ -43,7 +49,7 @@ impl SystemSetupStatus {
     }
 
     fn check_maven(dir: &Path) -> Option<String> {
-        let (code, out, _err) = utils::exec_command_silent(&dir, "mvn --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "mvn --version");
         if code != 0 {
             return None;
         }
@@ -54,7 +60,7 @@ impl SystemSetupStatus {
     }
 
     fn check_cargo(dir: &Path) -> Option<String> {
-        let (code, out, _err) = utils::exec_command_silent(&dir, "cargo --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "cargo --version");
         if code != 0 {
             return None;
         }
@@ -65,7 +71,7 @@ impl SystemSetupStatus {
     }
 
     fn check_gradle(dir: &Path) -> Option<String> {
-        let (code, out, _err) = utils::exec_command_silent(&dir, "gradle --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "gradle --version");
         if code != 0 {
             return None;
         }
@@ -114,11 +120,11 @@ impl CargoSetupStatus {
 
     pub fn check(dir: &Path) -> Self {
         let toml_path = dir.join("Cargo.toml");
-        if let Some(toml) = parse_toml(&toml_path).ok() {
+        if let Some(CargoTomlFile { toml_parsed, .. }) = parse_toml(&toml_path).ok() {
             return CargoSetupStatus {
                 cargo_toml_present: true,
-                cargo_lib_setup: Self::check_lib_setup(toml.lib.as_ref()),
-                cargo_java_bindgen_setup: Self::check_java_bindgen(toml.java_bindgen()),
+                cargo_lib_setup: Self::check_lib_setup(toml_parsed.lib.as_ref()),
+                cargo_java_bindgen_setup: Self::check_java_bindgen(toml_parsed.java_bindgen()),
             };
         }
 
@@ -134,20 +140,32 @@ impl CargoSetupStatus {
         let lib_label = flabel("[lib]");
         let bindgen_label = flabel("[java-bindgen]");
         if !self.cargo_toml_present {
-            println!("{} {cargo_label}{}", icon("red"), COLOR_RED.paint("Not found"));
+            println!(
+                "{} {cargo_label}{}",
+                icon("red"),
+                COLOR_RED.paint("Not found")
+            );
             return;
         } else {
-            println!("{} {cargo_label}{}",icon("ok"), COLOR_GREEN.paint("Ok"));
+            println!("{} {cargo_label}{}", icon("ok"), COLOR_GREEN.paint("Ok"));
         }
 
         if !self.cargo_lib_setup {
-            println!("{} {lib_label}{}", icon("red"), COLOR_RED.paint("Invalid Configuration"));
+            println!(
+                "{} {lib_label}{}",
+                icon("red"),
+                COLOR_RED.paint("Invalid Configuration")
+            );
         } else {
             println!("{} {lib_label}{}", icon("ok"), COLOR_GREEN.paint("Ok"));
         }
 
         if !self.cargo_java_bindgen_setup {
-            println!("{} {bindgen_label}{}", icon("red"), COLOR_RED.paint("Invalid Configuration"));
+            println!(
+                "{} {bindgen_label}{}",
+                icon("red"),
+                COLOR_RED.paint("Invalid Configuration")
+            );
         } else {
             println!("{} {bindgen_label}{}", icon("ok"), COLOR_GREEN.paint("Ok"));
         }
@@ -168,9 +186,7 @@ pub struct CheckResult {
 }
 
 impl CheckResult {
-    
     pub fn check(dir: &Path) -> Self {
-
         Self {
             system: SystemSetupStatus::check(dir),
             cargo: CargoSetupStatus::check(dir),
@@ -182,15 +198,15 @@ impl CheckResult {
     }
 
     pub fn print_status(&self) {
-        println!("{}", header("Environment"));
+        println!("{}", header("System"));
         self.system.pretty_print();
         println!("{}    {}", flabel(""), self.system.get_status());
-    
+
         println!("");
-    
+
         println!("{}", header("Rust Project"));
         self.cargo.pretty_print();
         println!("{}    {}", flabel(""), self.cargo.get_status());
         println!("");
-    } 
+    }
 }

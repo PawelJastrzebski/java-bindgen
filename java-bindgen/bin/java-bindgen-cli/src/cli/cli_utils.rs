@@ -1,6 +1,17 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
+use color_eyre::eyre::Context;
 use java_bindgen_core::utils::create_or_get_dir;
+
+pub fn create_file(
+    directory: &Path,
+    file_name: &str,
+    content: &str,
+) -> color_eyre::Result<PathBuf> {
+    let file_path = directory.join(file_name);
+    std::fs::write(&file_path, content).wrap_err(format!("Failed to create {file_name} file "))?;
+    Ok(file_path)
+}
 
 pub fn exec_command_silent(dir: &Path, command: &str) -> (i32, String, String) {
     let dir_path = dir.to_string_lossy();
@@ -27,12 +38,23 @@ pub static COLOR_WHITE: ansi_term::Colour = ansi_term::Colour::White;
 pub static COLOR_WHITE_RGB: ansi_term::Colour = ansi_term::Colour::RGB(250, 250, 250);
 pub static COLOR_GRAY: ansi_term::Colour = ansi_term::Colour::RGB(140, 140, 140);
 
-
 pub fn icon(kind: &str) -> String {
     match kind {
-        "yellow" | "warn" => COLOR_WHITE_RGB.on(COLOR_GRAY).bold().paint(" ! ").to_string(),
-        "red" | "error" => COLOR_WHITE_RGB.on(COLOR_RED).bold().paint(" ✕ ").to_string(),
-        "green" | "ok" | _ => COLOR_WHITE_RGB.on(COLOR_GREEN).bold().paint(" ✓ ").to_string()
+        "yellow" | "warn" => COLOR_WHITE_RGB
+            .on(COLOR_GRAY)
+            .bold()
+            .paint(" ! ")
+            .to_string(),
+        "red" | "error" => COLOR_WHITE_RGB
+            .on(COLOR_RED)
+            .bold()
+            .paint(" ✕ ")
+            .to_string(),
+        "green" | "ok" | _ => COLOR_WHITE_RGB
+            .on(COLOR_GREEN)
+            .bold()
+            .paint(" ✓ ")
+            .to_string(),
     }
 }
 
@@ -42,7 +64,11 @@ pub fn print_option(label: &str, version: Option<&String>, required: bool) {
         let version = strip_ansi_escapes::strip_str(&version);
         println!("{} {label}{}", icon("ok"), COLOR_GREEN.paint(version))
     } else if !required {
-        println!("{} {label}{}",icon("warn"), COLOR_WHITE.dimmed().paint("Not found"))
+        println!(
+            "{} {label}{}",
+            icon("warn"),
+            COLOR_WHITE.dimmed().paint("Not found")
+        )
     } else {
         println!("{} {label}{}", icon("red"), COLOR_RED.paint("Not found"))
     }
@@ -64,14 +90,27 @@ pub fn header(label: &str) -> String {
     let width = size.0 as usize;
 
     let right_witdth = (width as f32 / 1.5) as usize - label.len() - 3 - 2;
-    format!("{} {} {}\n", "═".repeat(right_witdth / 2), COLOR_WHITE.bold().dimmed().paint(label), "═".repeat( right_witdth /2 ))
+    format!(
+        "{} {} {}\n",
+        "═".repeat(right_witdth / 2),
+        COLOR_WHITE.bold().dimmed().paint(label),
+        "═".repeat(right_witdth / 2)
+    )
 }
 
-pub fn ready_info(is_ready: bool ,label: &str) -> String {
+pub fn ready_info(is_ready: bool, label: &str) -> String {
     if is_ready {
-        COLOR_WHITE_RGB.on(COLOR_GREEN).bold().paint(format!("  {label} ✓  ")).to_string()
+        COLOR_WHITE_RGB
+            .on(COLOR_GREEN)
+            .bold()
+            .paint(format!("  {label} ✓  "))
+            .to_string()
     } else {
-        COLOR_WHITE_RGB.on(COLOR_RED).bold().paint(format!("  {label} ✕  ")).to_string()
+        COLOR_WHITE_RGB
+            .on(COLOR_RED)
+            .bold()
+            .paint(format!("  {label} ✕  "))
+            .to_string()
     }
 }
 
@@ -88,6 +127,8 @@ pub fn exec_command(directory: &Path, command: &str, info: &str) -> color_eyre::
     }
 
     // Spawn process
+
+    let command = command.replace("\n", " ").replace("\t", "");
     let mut process = subprocess::Exec::shell(&format!("cd {} && {}", dir_path, command))
         .stdout(subprocess::Redirection::Pipe)
         .stderr(subprocess::Redirection::Merge)
@@ -103,11 +144,10 @@ pub fn exec_command(directory: &Path, command: &str, info: &str) -> color_eyre::
     }
 
     let status_code = process.poll().expect("Status code");
-    println!("{}\n", crate::utils::ready_info(status_code.success(), "OK"));
+    println!("{}\n", ready_info(status_code.success(), "OK"));
 
     Ok(())
 }
-
 
 pub fn sleep(milis: u64) {
     std::thread::sleep(std::time::Duration::from_millis(milis));

@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "javab"
-path = "src/main_javab.rs"
+name = "java-pack"
+path = "src/java-pack.rs"
 
 [[bin]]
 name = "java-bindgen-cli"
-path = "src/main_java-bindgen-cli.rs"
+path = "src/java-bindgen-cli.rs"
 
 [dependencies]
 java-bindgen-core = {path = "../java-bindgen-core"}

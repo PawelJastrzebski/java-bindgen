@@ -11,6 +11,59 @@ mod java_to_rust {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType>;
     }
 
+
+    // self transfer
+
+    impl<'local> IntoRustType<'local> for i8 {
+        type RType = u8;
+
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+            Ok(self as u8)
+        }
+    }
+
+
+    impl<'local> IntoRustType<'local> for i16 {
+        type RType = i16;
+
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoRustType<'local> for i32 {
+        type RType = i32;
+
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+            Ok(self)
+        }
+    }
+    impl<'local> IntoRustType<'local> for i64 {
+        type RType = i64;
+
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoRustType<'local> for f32 {
+        type RType = f32;
+
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoRustType<'local> for f64 {
+        type RType = f64;
+
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+            Ok(self)
+        }
+    }
+
+    // String
+
     impl<'local> IntoRustType<'local> for jni::objects::JString<'local> {
         type RType = String;
 
@@ -19,6 +72,8 @@ mod java_to_rust {
             string.to_str().map(|s| s.to_string()).j_catch(env)
         }
     }
+
+    // Byte array
 
     impl<'local> IntoRustType<'local> for jni::objects::JByteArray<'local> {
         type RType = Vec<u8>;
@@ -42,6 +97,17 @@ mod rust_to_java {
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType>;
     }
 
+    // void/null ()
+
+    impl<'local> IntoJavaType<'local> for () {
+        type JType = jni::objects::JObject<'local>;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(jni::objects::JObject::null())
+        }
+    }
+
+
     // jni types (self impl)
 
     impl<'local> IntoJavaType<'local> for jni::objects::JObject<'local> {
@@ -61,13 +127,80 @@ mod rust_to_java {
     }
 
     // primitves
+
+    impl<'local> IntoJavaType<'local> for i8 {
+        type JType = jni::sys::jbyte;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
     impl<'local> IntoJavaType<'local> for u8 {
         type JType = jni::sys::jbyte;
 
-        fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             Ok(self as i8)
         }
     }
+
+    impl<'local> IntoJavaType<'local> for i32 {
+        type JType = jni::sys::jint;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for i64 {
+        type JType = jni::sys::jlong;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for bool {
+        type JType = jni::sys::jboolean;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self as u8)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for char {
+        type JType = jni::sys::jchar;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self as u16)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for i16 {
+        type JType = jni::sys::jshort;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for f32 {
+        type JType = jni::sys::jfloat;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for f64 {
+        type JType = jni::sys::jdouble;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
+
+    // primitves class wrappers
+
     impl<'local> IntoJavaType<'local> for super::JByte {
         type JType = jni::objects::JObject<'local>;
 
@@ -230,7 +363,7 @@ mod java_types {
 
     #[repr(transparent)]
     #[derive(Default)]
-    pub struct JByte(pub u8);
+    pub struct JByte(pub i8);
     #[repr(transparent)]
     #[derive(Default)]
     pub struct JShort(pub u16);

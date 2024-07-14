@@ -5,6 +5,12 @@ use std::{
 
 use serde::Deserialize;
 
+pub struct CargoTomlFile {
+    pub toml_parsed: CargoToml,
+    pub toml_path: PathBuf,
+    pub toml_content: String
+}
+
 #[derive(Deserialize, Debug)]
 pub struct CargoToml {
     pub package: Package,
@@ -56,23 +62,25 @@ pub enum TomlParseError {
     ParseError(#[from] toml::de::Error),
 }
 
-pub fn parse_toml(path: &Path) -> Result<CargoToml, TomlParseError> {
-    let Some(full_path) = fs::canonicalize(path).ok() else {
+pub fn parse_toml(path: &Path) -> Result<CargoTomlFile, TomlParseError> {
+    let Some(toml_path) = fs::canonicalize(path).ok() else {
         return Err(TomlParseError::NotFound);
     };
 
     if path.is_dir() {
-        return Err(TomlParseError::Invalid(full_path));
+        return Err(TomlParseError::Invalid(toml_path));
     }
 
     let Ok(toml_content) = std::fs::read_to_string(&path) else {
-        return Err(TomlParseError::FailedToOpen(full_path));
+        return Err(TomlParseError::FailedToOpen(toml_path));
     };
 
-    // let value: toml::Value = toml::from_str(&toml_content).map_err(TomlParseError::ParseError)?;
-    // dbg!(value);
-
-    toml::from_str(&toml_content).map_err(TomlParseError::ParseError)
+    let toml_parsed = toml::from_str(&toml_content).map_err(TomlParseError::ParseError)?;
+    Ok(CargoTomlFile {
+        toml_parsed,
+        toml_path,
+        toml_content
+    })
 }
 
 #[cfg(test)]
@@ -82,7 +90,7 @@ pub mod tests {
     #[test]
     pub fn should_read_from_toml_file() {
         let paht = Path::new("tests_assets/example.toml");
-        let file = super::parse_toml(&paht).unwrap();
+        let file = super::parse_toml(&paht).unwrap().toml_parsed;
         let java_bindgen = file.java_bindgen().unwrap_or_default();
         assert_eq!("mylib", file.package.name);
         assert_eq!("0.1.1", file.package.version);

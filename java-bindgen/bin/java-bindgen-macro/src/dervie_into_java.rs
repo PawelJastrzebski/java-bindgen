@@ -125,7 +125,6 @@ pub fn main(item: TokenStream) -> TokenStream {
                     let m_id = env.get_method_id(&class, "<init>", sig.to_string())?;
                     unsafe { env.new_object_unchecked(class, m_id, args).j_catch(env) }
                 }
-
             }
         };
 
