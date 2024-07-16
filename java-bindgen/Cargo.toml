@@ -1,13 +1,12 @@
 [package]
 name = "java-bindgen"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 edition = "2021"
-description = "Java Bindgen"
+description = "☕ + 🦀 = ❤️‍🔥 Java JNI Bindings Generator"
+repository = "https://github.com/PawelJastrzebski/java-bindgen"
 license = "MIT"
 rust-version = "1.70"
-
-[features]
-jvm = []
+keywords = ["java", "jni", "bindings", "jar"]
 
 [dependencies]
 jni = { version = "0.21", features = ["invocation"] }

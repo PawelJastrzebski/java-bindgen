@@ -19,6 +19,10 @@ impl ProjectInfo {
 
 impl ProjectInfo {
 
+    pub fn get_native_lib_name(&self) -> String {
+        self.lib_name.replace("-", "_")
+    }
+
     pub fn tests_java_dir_name(&self) -> PathBuf {
         PathBuf::from("tests_java")
     }
@@ -51,7 +55,7 @@ impl ProjectInfo {
         // package: com.test
         // class: MyLib
         // fn: hello
-        format!("Java_{}_{}_{}", packages.join("_"), class_name, method_name)
+        format!("Java_{}_{}_{}", packages.join("_"), class_name, method_name.replace("_", "_1"))
     }
 
     pub fn get_packages_path(&self) -> Vec<String> {

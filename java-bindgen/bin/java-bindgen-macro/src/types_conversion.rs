@@ -102,6 +102,9 @@ pub fn rewrite_jni_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Opt
     if rust_type == "bool" {
         return Some("boolean".to_string());
     }
+    if rust_type == "char" {
+        return Some("char".to_string());
+    }
 
     // objects
 
@@ -185,6 +188,9 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     // None
 }
 
+
+const OBJECT_TYPES: &[&str] = &["()", "JByte", "JShort", "JInt", "JLong", "JFloat", "JDouble", "JBoolean", "JChar"];
+
 // Revirte [Rust Type] to [JNI Rust]
 pub fn rewrite_rust_type_to_jni(
     ty: &TokenStream2,
@@ -193,7 +199,7 @@ pub fn rewrite_rust_type_to_jni(
 ) -> Option<TokenStream2> {
     let rust_type = ty.to_string().replace(" ", "");
 
-    if rust_type == "()" {
+    if OBJECT_TYPES.contains(&rust_type.as_str()) {
         return Some(quote! { jni::objects::JObject #lifetime });
     };
 
@@ -220,8 +226,11 @@ pub fn rewrite_rust_type_to_jni(
     if rust_type == "jdouble" || rust_type == "f64" {
         return Some(quote! { jni::sys::jdouble });
     };
+    if rust_type == "jchar" || rust_type == "char" {
+        return Some(quote! { jni::sys::jchar });
+    };
 
-    // Objects
+    // Typed Objects
 
     if rust_type == "String" {
         return Some(quote! { jni::objects::JString #lifetime });

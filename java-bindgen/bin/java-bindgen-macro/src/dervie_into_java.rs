@@ -10,7 +10,10 @@ use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::{__private::TokenStream2, spanned::Spanned, Data, DeriveInput, Fields, Ident, Type};
 
-use crate::{types_conversion::rewrite_rust_to_java, util::{self, CompileErrors}};
+use crate::{
+    types_conversion::rewrite_rust_to_java,
+    util::{self, CompileErrors},
+};
 
 pub fn get_struct_fileds(fields: &Fields, errors: &mut CompileErrors) -> Vec<(Ident, Type)> {
     let mut result = vec![];
@@ -27,7 +30,10 @@ pub fn get_struct_fileds(fields: &Fields, errors: &mut CompileErrors) -> Vec<(Id
     result
 }
 
-pub fn produce_java_class_ffi_types(rust_types: &Vec<(Ident, Type)>, errors: &mut CompileErrors) -> Option<Vec<(String, String)>> {
+pub fn produce_java_class_ffi_types(
+    rust_types: &Vec<(Ident, Type)>,
+    errors: &mut CompileErrors,
+) -> Option<Vec<(String, String)>> {
     let mut java_types = vec![];
     for (name, ty) in rust_types {
         let Some(java_ty) = rewrite_rust_to_java(&ty.to_token_stream(), errors) else {
@@ -51,7 +57,6 @@ pub fn main(item: TokenStream) -> TokenStream {
             return quote! { #errors }.into();
         };
 
-
         // Parse Cargo.toml file
         let cargo_toml = match util::parse_project_toml(&project_dir) {
             Ok(toml) => toml,
@@ -65,9 +70,10 @@ pub fn main(item: TokenStream) -> TokenStream {
         let project_info = ProjectInfo::from(&cargo_toml);
         let fields = get_struct_fileds(&struct_info.fields, &mut errors);
         let Some(java_fields) = produce_java_class_ffi_types(&fields, &mut errors) else {
-            return  quote! {
+            return quote! {
                 #errors
-            }.into()
+            }
+            .into();
         };
 
         if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
@@ -83,16 +89,25 @@ pub fn main(item: TokenStream) -> TokenStream {
         // rust to java type covertion
         let mut type_signature = quote! {};
         let mut args_conversion = quote! {};
-        for (name, ty) in fields.into_iter() {
+        let mut args_list = quote! {};
+        for (i, (name, ty)) in fields.into_iter().enumerate() {
+            let arg_name = format_ident!("a{i}");
             args_conversion = quote! {
                 #args_conversion
-                self. #name .into_j_value(env)?.as_jni(),
+                let #arg_name = self.#name.into_j_value(env)?;
+                let #arg_name = #arg_name.borrow();
             };
 
             if type_signature.is_empty() {
                 type_signature = quote! { #ty };
             } else {
                 type_signature = quote! { #type_signature, #ty };
+            }
+
+            if args_list.is_empty() {
+                args_list = quote! { #arg_name };
+            } else {
+                args_list = quote! { #args_list, #arg_name };
             }
         }
 
@@ -111,19 +126,10 @@ pub fn main(item: TokenStream) -> TokenStream {
                 fn into_java(self, env: &mut jni::JNIEnv<'local>) -> JResult<Self::JType> {
                     let sig = signature_by_type!(#type_signature => JVoid);
 
-                    let args = &[
-                        #args_conversion
-                    ];
-
-                    if args.len() != sig.args.len() {
-                        let e = JExceptionClass::ClassCastException;
-                        env.j_throw_msg(&e, "Invalid implementation");
-                        return Err(e.into());
-                    }
+                    #args_conversion
 
                     let class = env.find_class(#class_path).j_catch(env)?;
-                    let m_id = env.get_method_id(&class, "<init>", sig.to_string())?;
-                    unsafe { env.new_object_unchecked(class, m_id, args).j_catch(env) }
+                    env.new_object(class, sig.to_string(), &[#args_list]).j_catch(env)
                 }
             }
         };

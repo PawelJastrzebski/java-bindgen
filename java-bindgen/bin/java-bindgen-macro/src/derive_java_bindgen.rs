@@ -96,6 +96,8 @@ fn produce_fn_java_args_signature(
                     }
                     if pat_string.trim() == "_" {
                         env_indent = format_ident!("arg{i}").to_token_stream()
+                    } else {
+                        env_indent = pat.to_token_stream()
                     }
 
                     let jni_env_type = ts2(&type_string.replace("&mut", ""));
