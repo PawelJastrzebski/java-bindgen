@@ -28,7 +28,7 @@ pub fn produce_java_classes(project_info: &ProjectInfo, ffi: &FFIStore) -> Vec<J
         let class_fields: Vec<String> = class
             .fields
             .iter()
-            .map(|f| format!("\t{} {};", f.1, f.0))
+            .map(|f| format!("\tfinal {} {};", f.1, f.0))
             .collect();
 
         let file_content = JAVA_CLASS_TEMPLATE

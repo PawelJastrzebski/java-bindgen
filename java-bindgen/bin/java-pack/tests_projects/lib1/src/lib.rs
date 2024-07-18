@@ -54,7 +54,12 @@ pub fn ethrow<'local>(
 
 #[java_bindgen]
 fn hello_1<'aa>(env: &mut JNIEnv<'aa>, input: JString<'aa>) -> JResult<String> {
-    let input = input.into_rust(env)?;
+    let input: String = input.into_rust(env)?;
+    Ok(format!("Hello Java Bindgen 222, {}!", input))
+}
+
+#[java_bindgen]
+fn hello_2<'aa>(env: &mut JNIEnv<'aa>, input: String) -> JResult<String> {
     Ok(format!("Hello Java Bindgen 222, {}!", input))
 }
 

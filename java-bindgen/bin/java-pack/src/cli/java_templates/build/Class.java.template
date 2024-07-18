@@ -1,13 +1,10 @@
 package [[package_name]];
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @ToString
 @Getter
-@Setter
+@Builder
 @AllArgsConstructor
 public class [[java-class-name]] {
 [[java-class-fields]]

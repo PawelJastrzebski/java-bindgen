@@ -89,12 +89,25 @@ pub fn header(label: &str) -> String {
     let size = crossterm::terminal::size().unwrap_or((0, 0));
     let width = size.0 as usize;
 
-    let right_witdth = (width as f32 / 1.5) as usize - label.len() - 3 - 2;
+    let right_witdth = (width as f32 / 1.8) as usize - label.len() - 3 - 2;
     format!(
         "{} {} {}\n",
         "═".repeat(right_witdth / 2),
         COLOR_WHITE.bold().dimmed().paint(label),
         "═".repeat(right_witdth / 2)
+    )
+}
+
+pub fn exit_msg(label: &str) -> String {
+    let size = crossterm::terminal::size().unwrap_or((0, 0));
+    let width = size.0 as usize;
+
+    let right_witdth = (width as f32 / 1.8) as usize - label.len() - 3 - 2;
+    format!(
+        "{} {} {}\n",
+        COLOR_RED.paint("═".repeat(right_witdth / 2)),
+        COLOR_RED.bold().paint(label),
+        COLOR_RED.paint("═".repeat(right_witdth / 2))
     )
 }
 
@@ -146,7 +159,16 @@ pub fn exec_command(directory: &Path, command: &str, info: &str) -> color_eyre::
     let status_code = process.poll().expect("Status code");
     println!("{}\n", ready_info(status_code.success(), "OK"));
 
+    if !status_code.success() {
+        exit()
+    }
+
     Ok(())
+}
+
+pub fn exit() {
+    println!("{}", COLOR_RED.paint(exit_msg("Exit")));
+    std::process::exit(-1)
 }
 
 pub fn sleep(milis: u64) {

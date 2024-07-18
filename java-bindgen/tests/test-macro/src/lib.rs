@@ -185,25 +185,99 @@ pub mod input_types {
     }
 }
 
-// Return Custom Class
-pub mod retrun_user {
+// Pass types
+pub mod pass_types {
     use java_bindgen::prelude::*;
 
-    #[derive(Default, IntoJava)]
-    struct UserClass {
-        name: String,
+    #[java_bindgen]
+    fn pass_u8(input: u8) -> JResult<u8> {
+        Ok(input)
     }
 
-    #[java_bindgen(return = UserClass)]
-    fn get_user() -> JResult<UserClass> {
-        Ok(UserClass {
-            name: "Tom".to_string(),
-        })
+    #[java_bindgen]
+    fn pass_i16(input: i16) -> JResult<i16> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_i32(input: i32) -> JResult<i32> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_i64(input: i64) -> JResult<i64> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_f32(input: f32) -> JResult<f32> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_f64(input: f64) -> JResult<f64> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_string(input: String) -> JResult<String> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_byte_array<'a>(input: Vec<u8>) -> JResult<Vec<u8>> {
+        Ok(input)
     }
 }
 
-// Log
-pub mod test_logger {
+// Return Custom Class
+pub mod custom_type {
+    use java_bindgen::prelude::*;
+
+    #[derive(Default, IntoJava, IntoRust)]
+    struct UserClass {
+        name: String,
+        age: i32
+    }
+
+    #[java_bindgen]
+    fn get_user() -> JResult<UserClass> {
+        Ok(UserClass {
+            age: 20,
+            name: "Tom".to_string(),
+        })
+    }
+
+    #[java_bindgen]
+    fn pass_user(name: String, user: UserClass) -> JResult<UserClass> {
+        Ok(UserClass {
+            age: user.age + 100,
+            name: format!("{name}{}", user.name),
+        })
+    }
+
+    #[derive(Default, IntoJava, IntoRust)]
+    struct AllJavaTypes {
+        java_b: u8,
+        java_s: i16,
+        java_i: i32,
+        java_l: i64,
+        java_f: f32,
+        java_d: f64,
+        java_c: char,
+        java_bool: bool,
+        java_string: String,
+        java_barray: Vec<u8>,
+    }
+
+    #[java_bindgen]
+    fn pass_all_types(object: AllJavaTypes) -> JResult<AllJavaTypes> {
+        Ok(object)
+    }
+}
+
+// Logger
+pub mod java_logger {
     use java_bindgen::prelude::*;
 
     #[derive(JLogger)]

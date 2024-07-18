@@ -198,7 +198,7 @@ mod tests {
         // Call Java function
         let result = Java_com_test_Lib1_user(env, class);
         // Convert result into rust
-        let result = result.into_rust(test_env)?;
+        let result: String = result.into_rust(test_env)?;
         assert_eq!(&result, "ok");
         Ok(())
     }

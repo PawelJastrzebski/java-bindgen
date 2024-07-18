@@ -7,7 +7,7 @@ use syn::Type;
 use syn::__private::TokenStream2;
 use syn::{spanned::Spanned, ReturnType};
 
-use crate::{types_conversion::rewrite_jni_to_java, util::CompileErrors};
+use crate::{types_conversion::rewrite_rust_to_java, util::CompileErrors};
 
 // Java arguments list for FFI interface (Java side arguments list) 
 pub fn produce_java_args(
@@ -30,7 +30,7 @@ pub fn produce_java_args(
 }
 
 pub fn produce_java_return(return_type: &TokenStream2, errors: &mut CompileErrors) -> String {
-    if let Some(new_type) = rewrite_jni_to_java(&return_type, errors) {
+    if let Some(new_type) = rewrite_rust_to_java(&return_type, errors) {
         return new_type;
     }
 
@@ -122,7 +122,7 @@ pub fn to_java_type(rust_type: &Type, errors: &mut CompileErrors) -> Option<Stri
         Type::Macro(_) => None,
         Type::Never(_) => add_error("never type"),
         Type::Paren(_) => add_error("parenthesized type"),
-        Type::Path(t) => rewrite_jni_to_java(&t.to_token_stream(), errors),
+        Type::Path(t) => rewrite_rust_to_java(&t.to_token_stream(), errors),
         Type::Ptr(_) => add_error("*"),
         Type::Reference(_) => {
             if rust_type_str.contains("JNIEnv") {
@@ -136,4 +136,35 @@ pub fn to_java_type(rust_type: &Type, errors: &mut CompileErrors) -> Option<Stri
         Type::Verbatim(_) => add_error("unknown token"),
         _ => add_error("unknown type"),
     }
+}
+
+
+pub fn get_struct_fileds(fields: &syn::Fields, errors: &mut CompileErrors) -> Vec<(syn::Ident, Type)> {
+    let mut result = vec![];
+    for field in fields.iter() {
+        let Some(ref name) = field.ident else {
+            errors.add_spaned(
+                field.span(),
+                "Fields with no names are not supported.".to_string(),
+            );
+            continue;
+        };
+        result.push((name.clone(), field.ty.clone()));
+    }
+    result
+}
+
+pub fn produce_java_class_ffi_types(
+    rust_types: &Vec<(syn::Ident, Type)>,
+    errors: &mut CompileErrors,
+) -> Option<Vec<(String, String)>> {
+    let mut java_types = vec![];
+    for (name, ty) in rust_types {
+        let Some(java_ty) = crate::types_conversion::rewrite_rust_to_java(&ty.to_token_stream(), errors) else {
+            return None;
+        };
+        java_types.push((name.to_string(), java_ty));
+    }
+
+    Some(java_types)
 }

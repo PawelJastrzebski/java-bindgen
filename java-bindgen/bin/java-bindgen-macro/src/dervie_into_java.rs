@@ -15,36 +15,6 @@ use crate::{
     util::{self, CompileErrors},
 };
 
-pub fn get_struct_fileds(fields: &Fields, errors: &mut CompileErrors) -> Vec<(Ident, Type)> {
-    let mut result = vec![];
-    for field in fields.iter() {
-        let Some(ref name) = field.ident else {
-            errors.add_spaned(
-                field.span(),
-                "Fields with no names are not supported.".to_string(),
-            );
-            continue;
-        };
-        result.push((name.clone(), field.ty.clone()));
-    }
-    result
-}
-
-pub fn produce_java_class_ffi_types(
-    rust_types: &Vec<(Ident, Type)>,
-    errors: &mut CompileErrors,
-) -> Option<Vec<(String, String)>> {
-    let mut java_types = vec![];
-    for (name, ty) in rust_types {
-        let Some(java_ty) = rewrite_rust_to_java(&ty.to_token_stream(), errors) else {
-            return None;
-        };
-        java_types.push((name.to_string(), java_ty));
-    }
-
-    Some(java_types)
-}
-
 pub fn main(item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<DeriveInput>(item.clone()) {
         let project_dir = std::path::Path::new(".");
@@ -68,8 +38,8 @@ pub fn main(item: TokenStream) -> TokenStream {
 
         // Create project info
         let project_info = ProjectInfo::from(&cargo_toml);
-        let fields = get_struct_fileds(&struct_info.fields, &mut errors);
-        let Some(java_fields) = produce_java_class_ffi_types(&fields, &mut errors) else {
+        let fields = crate::common::get_struct_fileds(&struct_info.fields, &mut errors);
+        let Some(java_fields) = crate::common::produce_java_class_ffi_types(&fields, &mut errors) else {
             return quote! {
                 #errors
             }
@@ -116,7 +86,7 @@ pub fn main(item: TokenStream) -> TokenStream {
         let class_path = class_path.join("/");
         let class_path = TokenStream2::from_str(&format!("\"{class_path}\"")).unwrap_or(quote! {});
 
-        let result = quote! {
+        return quote! {
 
             #errors
 
@@ -132,9 +102,7 @@ pub fn main(item: TokenStream) -> TokenStream {
                     env.new_object(class, sig.to_string(), &[#args_list]).j_catch(env)
                 }
             }
-        };
-
-        return result.into();
+        }.into()
     }
 
     quote! {}.into()

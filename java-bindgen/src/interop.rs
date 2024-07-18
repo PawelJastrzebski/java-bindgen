@@ -1,85 +1,204 @@
 pub use java_to_rust::*;
 mod java_to_rust {
+    use jni::objects::JByteArray;
+
     use crate::exception::*;
 
     // Java To Rust
-    pub trait IntoRustType<'local>
-    where
-        Self: Default,
-    {
-        type RType;
-        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType>;
+    pub trait IntoRustType<'local, T> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>;
     }
 
+    impl<'local> IntoRustType<'local, bool> for jni::sys::jboolean {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<bool> {
+            Ok(self == jni::sys::JNI_TRUE)
+        }
+    }
 
-    // self transfer
-
-    impl<'local> IntoRustType<'local> for i8 {
-        type RType = u8;
-
-        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+    impl<'local> IntoRustType<'local, u8> for jni::sys::jbyte {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<u8> {
             Ok(self as u8)
         }
     }
 
-
-    impl<'local> IntoRustType<'local> for i16 {
-        type RType = i16;
-
-        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+    impl<'local> IntoRustType<'local, i8> for jni::sys::jbyte {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<i8> {
             Ok(self)
         }
     }
 
-    impl<'local> IntoRustType<'local> for i32 {
-        type RType = i32;
-
-        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
-            Ok(self)
-        }
-    }
-    impl<'local> IntoRustType<'local> for i64 {
-        type RType = i64;
-
-        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
-            Ok(self)
+    impl<'local> IntoRustType<'local, char> for jni::sys::jchar {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<char> {
+            char::from_u32(self as u32).ok_or(JExceptionClass::ArithmeticException.into())
         }
     }
 
-    impl<'local> IntoRustType<'local> for f32 {
-        type RType = f32;
-
-        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+    impl<'local> IntoRustType<'local, u16> for jni::sys::jchar {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<u16> {
             Ok(self)
         }
     }
 
-    impl<'local> IntoRustType<'local> for f64 {
-        type RType = f64;
-
-        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+    impl<'local> IntoRustType<'local, i16> for jni::sys::jshort {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<i16> {
             Ok(self)
         }
     }
 
-    // String
+    impl<'local> IntoRustType<'local, i32> for jni::sys::jint {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<i32> {
+            Ok(self)
+        }
+    }
 
-    impl<'local> IntoRustType<'local> for jni::objects::JString<'local> {
-        type RType = String;
+    impl<'local> IntoRustType<'local, i64> for jni::sys::jlong {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<i64> {
+            Ok(self)
+        }
+    }
 
-        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
+    impl<'local> IntoRustType<'local, f32> for jni::sys::jfloat {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<f32> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, f64> for jni::sys::jdouble {
+        fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<f64> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, Vec<u8>> for jni::objects::JByteArray<'local> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Vec<u8>> {
+            env.convert_byte_array(&self).j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, String> for jni::objects::JString<'local> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<String> {
             let string = env.get_string(&self).j_catch(env)?;
             string.to_str().map(|s| s.to_string()).j_catch(env)
         }
     }
 
-    // Byte array
+    impl<'local> IntoRustType<'local, String> for jni::objects::JObject<'local> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<String> {
+            jni::objects::JString::from(self).into_rust(env)
+        }
+    }
 
-    impl<'local> IntoRustType<'local> for jni::objects::JByteArray<'local> {
-        type RType = Vec<u8>;
+    impl<'local> IntoRustType<'local, String>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<String> {
+            let obj = self.l()?;
+            obj.into_rust(env)
+        }
+    }
 
-        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::RType> {
-            env.convert_byte_array(&self).j_catch(env)
+    impl<'local> IntoRustType<'local, i8> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i8> {
+            self.b().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, u8> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<u8> {
+            let b = self.b().j_catch(env)?;
+            Ok(b as u8)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, i16> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i16> {
+            self.s().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, i32> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i32> {
+            self.i().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, i64> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i64> {
+            self.j().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, f32> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<f32> {
+            self.f().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, f64> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<f64> {
+            self.d().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, bool> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<bool> {
+            self.z().j_catch(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, char> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<char> {
+            let char = self.c().j_catch(env)?;
+            char.into_rust(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, Vec<u8>>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Vec<u8>> {
+            let obj = self.l().j_catch(env)?;
+            JByteArray::from(obj).into_rust(env)
+        }
+    }
+
+    // Raw JNI types
+
+    impl<'local> IntoRustType<'local, jni::objects::JString<'local>> for jni::objects::JString<'local> {
+        fn into_rust(
+            self,
+            _: &mut jni::JNIEnv<'local>,
+        ) -> crate::JResult<jni::objects::JString<'local>> {
+            Ok(self)
+        }
+    }
+}
+
+pub use java_getters::*;
+mod java_getters {
+    use super::*;
+
+    // Getters
+    pub trait JObjectGetters<'local> {
+        fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>
+        where
+            T: JTypeInfo,
+            jni::objects::JValueGen<jni::objects::JObject<'local>>:
+                java_to_rust::IntoRustType<'local, T>;
+    }
+
+    impl<'l> JObjectGetters<'l> for jni::objects::JObject<'l> {
+        fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'l>) -> crate::JResult<T>
+        where
+            T: JTypeInfo,
+            jni::objects::JValueGen<jni::objects::JObject<'l>>: IntoRustType<'l, T>,
+        {
+            let ty = T::j_type().to_string();
+            let e = env
+                .call_method(self, name, format!("(){ty}"), &[])
+                .j_catch(env)?;
+
+            e.into_rust(env)
         }
     }
 }
@@ -106,7 +225,6 @@ mod rust_to_java {
             Ok(jni::objects::JObject::null())
         }
     }
-
 
     // jni types (self impl)
 
@@ -321,8 +439,6 @@ mod rust_to_java {
         }
     }
 
-
-
     // byte array
 
     impl<'local> IntoJavaType<'local> for Vec<u8> {
@@ -361,6 +477,8 @@ mod rust_to_java {
 }
 
 pub use java_types::*;
+
+use crate::prelude::JavaCatch;
 mod java_types {
     use jni::{
         objects::{JObject, JValue, JValueOwned},
