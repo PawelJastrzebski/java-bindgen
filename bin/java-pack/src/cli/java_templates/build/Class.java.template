@@ -1,0 +1,11 @@
+package [[package_name]];
+
+import lombok.*;
+
+@ToString
+@Getter
+@Builder
+@AllArgsConstructor
+public class [[java-class-name]] {
+[[java-class-fields]]
+}

@@ -1,0 +1,5 @@
+/local-maven-repo
+/target
+.idea
+
+*_result.png

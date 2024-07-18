@@ -1,0 +1,19 @@
+[package]
+name = "lib1"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+java-bindgen = { path = "../../"}
+
+[package.java-bindgen.metadata]
+package = "com.test"
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[profile.dev]
+opt-level = 0
+debug = 1
+incremental = true
