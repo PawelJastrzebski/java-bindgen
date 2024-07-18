@@ -16,7 +16,7 @@ pub fn main(item: TokenStream) -> TokenStream {
         };
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(&project_dir) {
+        let cargo_toml = match util::parse_project_toml(project_dir) {
             Ok(toml) => toml,
             Err(err) => {
                 let error = util::error(input.ident.span(), err.to_string());

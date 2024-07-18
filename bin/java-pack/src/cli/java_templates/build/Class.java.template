@@ -2,8 +2,7 @@ package [[package_name]];
 
 import lombok.*;
 
-@ToString
-@Getter
+@Data
 @Builder
 @AllArgsConstructor
 public class [[java-class-name]] {

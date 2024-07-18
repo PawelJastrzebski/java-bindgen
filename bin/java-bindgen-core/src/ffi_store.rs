@@ -52,11 +52,11 @@ impl FFIStore {
     }
 
     pub fn get_methods(&self) -> Vec<JavaFFIMethod> {
-        return self.methods.clone();
+        self.methods.clone()
     }
 
     pub fn get_classes(&self) -> Vec<JavaFFIClass> {
-        return self.classes.clone();
+        self.classes.clone()
     }
 
     pub fn path(&self) -> Option<PathBuf> {
@@ -67,7 +67,6 @@ impl FFIStore {
 impl FFIStore {
     pub fn save(&mut self) {
         if let (Ok(new_json), Some(file)) = (serde_json::to_string(&self), &mut self.file_lock) {
-            file.set_len(0).ok();
             file.write(new_json.as_bytes()).ok();
             self.file_content = Some(new_json);
         }
@@ -80,12 +79,12 @@ impl FFIStore {
     }
 
     pub fn open_read_only(definitions_json: &Path) -> Self {
-        let json = std::fs::read_to_string(&definitions_json).unwrap_or_default();
+        let json = std::fs::read_to_string(definitions_json).unwrap_or_default();
         Self::from_json(json)
     }
 
     pub fn read_from_file(definitions_json: &Path) -> Option<Self> {
-        let json = std::fs::read_to_string(&definitions_json).unwrap_or_default();
+        let json = std::fs::read_to_string(definitions_json).unwrap_or_default();
         if let Some(dir) = definitions_json.parent() {
             create_or_get_dir(dir).ok();
         }

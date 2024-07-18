@@ -35,15 +35,42 @@ impl JExceptionClass {
     }
 }
 
+impl From<&jni::errors::Error> for JExceptionClass {
+    fn from(value: &jni::errors::Error) -> Self {
+        match value {
+            jni::errors::Error::WrongJValueType(_, _) => JExceptionClass::ClassCastException,
+            jni::errors::Error::InvalidCtorReturn => JExceptionClass::IllegalArgumentException,
+            jni::errors::Error::InvalidArgList(_) => JExceptionClass::IllegalArgumentException,
+            jni::errors::Error::MethodNotFound { name: _, sig: _ } => {
+                JExceptionClass::NoSuchMethodException
+            }
+            jni::errors::Error::FieldNotFound { name: _, sig: _ } => {
+                JExceptionClass::NoSuchFieldException
+            }
+            jni::errors::Error::JavaException => JExceptionClass::RuntimeException,
+            jni::errors::Error::JNIEnvMethodNotFound(_) => JExceptionClass::NoSuchMethodException,
+            jni::errors::Error::NullPtr(_) => JExceptionClass::NullPointerException,
+            jni::errors::Error::NullDeref(_) => JExceptionClass::NullPointerException,
+            jni::errors::Error::TryLock => JExceptionClass::IllegalStateException,
+            jni::errors::Error::JavaVMMethodNotFound(_) => JExceptionClass::NoSuchMethodException,
+            jni::errors::Error::FieldAlreadySet(_) => JExceptionClass::IllegalStateException,
+            jni::errors::Error::ThrowFailed(_) => JExceptionClass::IllegalStateException,
+            jni::errors::Error::ParseFailed(_, _) => JExceptionClass::IllegalStateException,
+            jni::errors::Error::JniCall(_) => JExceptionClass::UnsupportedOperationException
+        }
+    }
+}
+
 impl std::fmt::Display for JExceptionClass {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
-impl std::error::Error for JExceptionClass {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
+impl From<JExceptionClass> for JException {
+    fn from(val: JExceptionClass) -> Self {
+        let msg = &format!("{}", val);
+        JException::from_class_and_msg(val, msg)
     }
 }
 
@@ -54,6 +81,12 @@ pub struct JException {
 }
 
 impl JException {
+    pub fn from_class_and_msg(class: JExceptionClass, msg: &str) -> Self {
+        let error: Box<dyn std::error::Error> = msg.to_string().into();
+        let error = Rc::<dyn std::error::Error>::from(error);
+        Self { class, error }
+    }
+
     pub fn from_std<E: std::error::Error + 'static>(error: E) -> Self {
         Self {
             class: JExceptionClass::RuntimeException,
@@ -83,7 +116,7 @@ impl jni::errors::ToException for JException {
 
 impl<E> From<E> for JException
 where
-    E: std::error::Error + Send + Sync + 'static,
+    E: std::error::Error + 'static,
 {
     fn from(error: E) -> Self {
         JException::from_std(error)
@@ -104,16 +137,25 @@ impl std::fmt::Debug for JException {
 
 pub type JResult<T, E = JException> = core::result::Result<T, E>;
 
-pub fn j_result_handler<'a, T, E>(result: JResult<T, E>, env: &mut jni::JNIEnv<'a>) -> T::JType
+pub fn j_result_handler<'a, T>(
+    result: JResult<T, JException>,
+    env: &mut jni::JNIEnv<'a>,
+) -> T::JType
 where
     T: IntoJavaType<'a> + Default,
 {
     match result {
         Ok(ok) => match ok.into_java(env) {
             Ok(ok) => ok,
-            Err(_) => Default::default(),
+            Err(err) => {
+                env.j_throw_exception(err);
+                Default::default()
+            }
         },
-        Err(_) => Default::default(),
+        Err(err) => {
+            env.j_throw_exception(err);
+            Default::default()
+        }
     }
 }
 
@@ -124,7 +166,7 @@ macro_rules! jthrow {
         let error = $env.exception_occurred().unwrap_or_default();
         if error.is_null() {
             let message = format!(
-                "\"{}\" [Rust Error]\nRust Backtrace:\n{}\n",
+                "\nRust Error:  {}\nRust Backtrace:\n{}\n",
                 &$message,
                 Backtrace::force_capture()
             );
@@ -137,18 +179,40 @@ macro_rules! jthrow {
 pub trait JNIEnvUtils {
     fn j_throw_cause(&mut self, j_class: JExceptionClass, cause: &impl std::error::Error);
     fn j_throw(&mut self, j_class: JExceptionClass);
-    fn j_throw_msg(&mut self, j_class: &JExceptionClass, message: &str);
+    fn j_throw_msg(&mut self, message: &str);
+    fn j_throw_exception(&mut self, ex: JException);
+
+    fn get_string_owned(
+        &mut self,
+        jstring: &jni::objects::JString<'_>,
+    ) -> jni::errors::Result<String>;
 }
 
 impl<'local> JNIEnvUtils for jni::JNIEnv<'local> {
-    fn j_throw_msg(&mut self, j_class: &JExceptionClass, message: &str) {
-        jthrow!( self => j_class, message);
+    fn j_throw_msg(&mut self, message: &str) {
+        jthrow!( self => &JExceptionClass::RuntimeException, message);
     }
     fn j_throw_cause(&mut self, j_class: JExceptionClass, cause: &impl std::error::Error) {
         jthrow!( self => j_class, cause);
     }
     fn j_throw(&mut self, j_class: JExceptionClass) {
         jthrow!( self => j_class, j_class);
+    }
+    fn j_throw_exception(&mut self, ex: JException) {
+        let c = ex.class;
+        let e = ex.error;
+        jthrow!( self => c, e);
+    }
+
+    fn get_string_owned(
+        &mut self,
+        jstring: &jni::objects::JString<'_>,
+    ) -> jni::errors::Result<String> {
+        let string = self.get_string(jstring)?;
+        string
+            .to_str()
+            .map(|s| s.to_string())
+            .map_err(|_| jni::errors::Error::WrongJValueType("JString", "-"))
     }
 }
 
@@ -163,7 +227,25 @@ impl<'local, T, E: std::error::Error + 'static> JavaCatch<'local, T> for JResult
             Ok(ok) => Ok(ok),
             Err(err) => {
                 jthrow!(env => JExceptionClass::RuntimeException, err);
-                Err(crate::exception::JException::from_std(err))
+                Err(JException::from_std(err))
+            }
+        }
+    }
+}
+
+pub trait JavaCatchINI<'local, T> {
+    fn j_catch_ini(self, env: &mut jni::JNIEnv<'local>, msg: &str) -> crate::JResult<T>;
+}
+
+impl<'local, T> JavaCatchINI<'local, T> for Result<T, jni::errors::Error> {
+    fn j_catch_ini(self, env: &mut jni::JNIEnv<'local>, msg: &str) -> crate::JResult<T> {
+        match self {
+            Ok(ok) => Ok(ok),
+            Err(err) => {
+                let exception = JExceptionClass::from(&err);
+                let message = format!("{err}\n   Cause: {msg}");
+                jthrow!(env => exception, message);
+                Err(JException::from_class_and_msg(exception, &message))
             }
         }
     }
@@ -179,7 +261,6 @@ mod tests {
         Ok("ok".to_string())
     }
 
-    #[no_mangle]
     #[allow(unused_mut, non_snake_case)]
     pub extern "system" fn Java_com_test_Lib1_user<'a>(
         mut env: JNIEnv<'a>,

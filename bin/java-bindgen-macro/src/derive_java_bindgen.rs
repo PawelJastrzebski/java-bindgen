@@ -22,7 +22,7 @@ pub fn extract_jni_env_lifetime(
 ) -> Option<TokenStream2> {
     for ele in inputs.iter() {
         if let FnArg::Typed(typed) = ele {
-            let ty_str = typed.ty.to_token_stream().to_string().replace(" ", "");
+            let ty_str = typed.ty.to_token_stream().to_string().replace(' ', "");
             if !ty_str.contains("JNIEnv") {
                 continue;
             }
@@ -43,6 +43,8 @@ pub fn extract_jni_env_lifetime(
 struct JavaFnSig {
     args: TokenStream2,
     env_indent: TokenStream2,
+    #[allow(dead_code)]
+    class_indent: TokenStream2,
     into_rust_ident: Vec<TokenStream2>,
     jni_env_lifetime: TokenStream2,
 }
@@ -52,14 +54,13 @@ fn produce_fn_java_args_signature(
     inputs: &Punctuated<FnArg, Token![,]>,
     errors: &mut CompileErrors,
 ) -> JavaFnSig {
-    let jni_env_lifetime = extract_jni_env_lifetime(&inputs, errors).unwrap_or(quote! { <'l> });
+    let jni_env_lifetime = extract_jni_env_lifetime(inputs, errors).unwrap_or(quote! { <'l> });
     let mut into_rust_ident = vec![];
     let mut env_indent = quote! { env };
-    let mut jni_env = quote! { mut env: JNIEnv #jni_env_lifetime };
-    let mut jni_class = quote! { _classs: JClass #jni_env_lifetime };
+    let mut class_indent = quote! { _classs };
+    let mut jni_env = quote! { mut #env_indent: JNIEnv #jni_env_lifetime };
+    let mut jni_class = quote! { #class_indent: JClass #jni_env_lifetime };
     let mut args = quote! {};
-
-    // TODO !! clean code
 
     for (i, ele) in inputs.iter().enumerate() {
         match ele {
@@ -81,10 +82,10 @@ fn produce_fn_java_args_signature(
                 } else {
                     typed.ty.to_token_stream()
                 };
-                let type_string = ty.to_token_stream().to_string().replace(" ", "");
+                let type_string = ty.to_token_stream().to_string().replace(' ', "");
 
                 let pat = &typed.pat;
-                let pat_string = pat.to_token_stream().to_string().replace(" ", "");
+                let pat_string = pat.to_token_stream().to_string().replace(' ', "");
 
                 if type_string.contains("JNIEnv") {
                     if !type_string.contains("&mut") {
@@ -106,7 +107,12 @@ fn produce_fn_java_args_signature(
                 }
 
                 if type_string.contains("JClass") {
-                    jni_class = quote! { #pat : #ty };
+                    if pat_string.trim() == "_" {
+                        class_indent = format_ident!("arg{i}").to_token_stream()
+                    } else {
+                        class_indent = pat.to_token_stream()
+                    }
+                    jni_class = quote! { #class_indent : #ty };
                     continue;
                 }
                 args.append_all(quote! { , #pat : #ty  });
@@ -117,6 +123,7 @@ fn produce_fn_java_args_signature(
     JavaFnSig {
         args: quote! { #jni_env, #jni_class #args },
         env_indent,
+        class_indent,
         jni_env_lifetime,
         into_rust_ident,
     }
@@ -149,7 +156,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         let project_dir = std::path::Path::new(".");
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(&project_dir) {
+        let cargo_toml = match util::parse_project_toml(project_dir) {
             Ok(toml) => toml,
             Err(err) => {
                 let error = util::error(java_fn.span(), err.to_string());
@@ -165,7 +172,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         let rust_fn_name = java_fn.sig.ident.to_string();
         let return_type = produce_rust_result_type(&java_fn.sig.output, &mut errors);
 
-        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
+        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
             let args = produce_java_args(&java_fn.sig.inputs, &mut errors);
             let return_type = attribute
                 .returns
@@ -191,6 +198,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         let JavaFnSig {
             args,
             env_indent,
+            class_indent: _,
             jni_env_lifetime,
             into_rust_ident,
         } = produce_fn_java_args_signature(&java_fn.sig.inputs, &mut errors);
@@ -200,7 +208,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         for indent in into_rust_ident {
             rewrites.append_all(quote! {
 
-                let Ok(#indent) = #indent.into_rust(&mut env) else {
+                let Ok(#indent) = #indent.into_rust(&mut #env_indent) else {
                     return Default::default()
                 };
 

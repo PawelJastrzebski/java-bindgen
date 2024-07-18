@@ -9,7 +9,7 @@ pub fn parse_attr_to_map(attr: TokenStream) -> HashMap<String, String> {
     let mut map: HashMap<String, String> = HashMap::new();
     for entry in attr.to_string().split(',') {
         let key_value = entry.split('=').collect::<Vec<&str>>();
-        let key = key_value.get(0).unwrap_or(&"");
+        let key = key_value.first().unwrap_or(&"");
         let value = key_value.get(1).unwrap_or(&"");
         map.insert(
             key.trim().to_string(),
@@ -53,7 +53,7 @@ impl CompileErrors {
 }
 
 pub fn ts2(tokens: &str) -> TokenStream2 {
-    TokenStream2::from_str(&tokens).expect("valid TokenStream2")
+    TokenStream2::from_str(tokens).expect("valid TokenStream2")
 }
 
 pub fn parse_project_toml(project_dir: &std::path::Path) -> Result<CargoToml, String> {
@@ -82,7 +82,7 @@ pub fn parse_project_toml(project_dir: &std::path::Path) -> Result<CargoToml, St
             Ok(toml_parsed)
         }
         Err(err) => {
-            return Err(err.to_string());
+            Err(err.to_string())
         }
     }
 }
@@ -93,7 +93,7 @@ pub fn lifetime_from_type(ty: &syn::Type) -> Option<TokenStream2> {
             if let syn::PathArguments::AngleBracketed(ref args) = &segment.arguments {
                 for arg in &args.args {
                     if let syn::GenericArgument::Lifetime(lifetime) = arg {
-                        return Some(quote! {<#lifetime>}.into());
+                        return Some(quote! {<#lifetime>});
                     }
                 }
             }

@@ -20,7 +20,7 @@ impl ProjectInfo {
 impl ProjectInfo {
 
     pub fn get_native_lib_name(&self) -> String {
-        self.lib_name.replace("-", "_")
+        self.lib_name.replace('-', "_")
     }
 
     pub fn tests_java_dir_name(&self) -> PathBuf {
@@ -42,7 +42,7 @@ impl ProjectInfo {
         use convert_case::Casing;
 
         self.lib_name
-            .replace("_", " ")
+            .replace('_', " ")
             .to_case(convert_case::Case::Pascal)
     }
 
@@ -55,14 +55,13 @@ impl ProjectInfo {
         // package: com.test
         // class: MyLib
         // fn: hello
-        format!("Java_{}_{}_{}", packages.join("_"), class_name, method_name.replace("_", "_1"))
+        format!("Java_{}_{}_{}", packages.join("_"), class_name, method_name.replace('_', "_1"))
     }
 
     pub fn get_packages_path(&self) -> Vec<String> {
         self.java_package_name
             .to_lowercase()
-            .split(".")
-            .into_iter()
+            .split('.')
             .map(|s| s.to_string())
             .collect::<Vec<String>>()
     }

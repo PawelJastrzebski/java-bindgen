@@ -1,4 +1,5 @@
 #![doc = include_str!("../../../README.md")]
+#![forbid(unsafe_code, clippy::unwrap_used)]
 
 #[doc(hidden)]
 mod cli;

@@ -1,7 +1,32 @@
-pub use java_to_rust::*;
-mod java_to_rust {
-    use jni::objects::JByteArray;
+use crate::exception::JavaCatchINI;
 
+// Getters
+pub trait JObjectGetters<'local> {
+    fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>
+    where
+        T: JTypeInfo,
+        jni::objects::JValueGen<jni::objects::JObject<'local>>:
+            j2r::IntoRustType<'local, T>;
+}
+
+impl<'l> JObjectGetters<'l> for jni::objects::JObject<'l> {
+    fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'l>) -> crate::JResult<T>
+    where
+        T: JTypeInfo,
+        jni::objects::JValueGen<jni::objects::JObject<'l>>: IntoRustType<'l, T>,
+    {
+        let ty = T::j_type().to_string();
+        let e = env
+            .call_method(self, name, format!("(){ty}"), &[])
+            .j_catch_ini(env, &format!("Call Java getter: {name}()"))?;
+
+        e.into_rust(env)
+    }
+}
+
+pub use j2r::*;
+mod j2r {
+    use super::*;
     use crate::exception::*;
 
     // Java To Rust
@@ -29,7 +54,10 @@ mod java_to_rust {
 
     impl<'local> IntoRustType<'local, char> for jni::sys::jchar {
         fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<char> {
-            char::from_u32(self as u32).ok_or(JExceptionClass::ArithmeticException.into())
+            char::from_u32(self as u32).ok_or(JException::from_class_and_msg(
+                JExceptionClass::ClassCastException,
+                "u32 to char",
+            ))
         }
     }
 
@@ -71,20 +99,23 @@ mod java_to_rust {
 
     impl<'local> IntoRustType<'local, Vec<u8>> for jni::objects::JByteArray<'local> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Vec<u8>> {
-            env.convert_byte_array(&self).j_catch(env)
+            env.convert_byte_array(self)
+                .j_catch_ini(env, "Cast failed [JByteArray -> Vec<u8>]")
         }
     }
 
     impl<'local> IntoRustType<'local, String> for jni::objects::JString<'local> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<String> {
-            let string = env.get_string(&self).j_catch(env)?;
-            string.to_str().map(|s| s.to_string()).j_catch(env)
+            env.get_string_owned(&self)
+                .j_catch_ini(env, "Cast failed [JString -> String]")
         }
     }
 
     impl<'local> IntoRustType<'local, String> for jni::objects::JObject<'local> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<String> {
-            jni::objects::JString::from(self).into_rust(env)
+            let j_string = jni::objects::JString::from(self);
+            env.get_string_owned(&j_string)
+                .j_catch_ini(env, "Cast failed [JObject -> String]")
         }
     }
 
@@ -92,63 +123,63 @@ mod java_to_rust {
         for jni::objects::JValueGen<jni::objects::JObject<'local>>
     {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<String> {
-            let obj = self.l()?;
+            let obj = self.l().j_catch_ini(env, "JObject -> String")?;
             obj.into_rust(env)
         }
     }
 
     impl<'local> IntoRustType<'local, i8> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i8> {
-            self.b().j_catch(env)
+            self.b().j_catch_ini(env, "JObject -> i8")
         }
     }
 
     impl<'local> IntoRustType<'local, u8> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<u8> {
-            let b = self.b().j_catch(env)?;
+            let b = self.b().j_catch_ini(env, "JObject -> u8")?;
             Ok(b as u8)
         }
     }
 
     impl<'local> IntoRustType<'local, i16> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i16> {
-            self.s().j_catch(env)
+            self.s().j_catch_ini(env, "JObject -> i16")
         }
     }
 
     impl<'local> IntoRustType<'local, i32> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i32> {
-            self.i().j_catch(env)
+            self.i().j_catch_ini(env, "JObject -> i32")
         }
     }
 
     impl<'local> IntoRustType<'local, i64> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<i64> {
-            self.j().j_catch(env)
+            self.j().j_catch_ini(env, "JObject -> i64")
         }
     }
 
     impl<'local> IntoRustType<'local, f32> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<f32> {
-            self.f().j_catch(env)
+            self.f().j_catch_ini(env, "JObject -> f32")
         }
     }
 
     impl<'local> IntoRustType<'local, f64> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<f64> {
-            self.d().j_catch(env)
+            self.d().j_catch_ini(env, "JObject -> f64")
         }
     }
 
     impl<'local> IntoRustType<'local, bool> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<bool> {
-            self.z().j_catch(env)
+            self.z().j_catch_ini(env, "JObject -> bool")
         }
     }
 
     impl<'local> IntoRustType<'local, char> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<char> {
-            let char = self.c().j_catch(env)?;
+            let char = self.c().j_catch_ini(env, "JObject -> char")?;
             char.into_rust(env)
         }
     }
@@ -157,8 +188,86 @@ mod java_to_rust {
         for jni::objects::JValueGen<jni::objects::JObject<'local>>
     {
         fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Vec<u8>> {
-            let obj = self.l().j_catch(env)?;
-            JByteArray::from(obj).into_rust(env)
+            let obj = self.l().j_catch_ini(env, "JObject -> Vec<u8>")?;
+            jni::objects::JByteArray::from(obj).into_rust(env)
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JByte>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JByte> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JByte")?;
+            let byte: u8 = obj.call_getter("byteValue", env)?;
+            Ok(JByte(byte as i8))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JShort>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JShort> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JShort")?;
+            let short: i16 = obj.call_getter("shortValue", env)?;
+            Ok(JShort(short))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JInt> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JInt> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JInt")?;
+            let int: i32 = obj.call_getter("intValue", env)?;
+            Ok(JInt(int))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JLong>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JLong> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JLong")?;
+            let long: i64 = obj.call_getter("longValue", env)?;
+            Ok(JLong(long))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JFloat>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JFloat> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JFloat")?;
+            let float: f32 = obj.call_getter("floatValue", env)?;
+            Ok(JFloat(float))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JDouble>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JDouble> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JDouble")?;
+            let double: f64 = obj.call_getter("doubleValue", env)?;
+            Ok(JDouble(double))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JChar>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JChar> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JChar")?;
+            let char: char = obj.call_getter("charValue", env)?;
+            Ok(JChar(char))
+        }
+    }
+
+    impl<'local> IntoRustType<'local, JBoolean>
+        for jni::objects::JValueGen<jni::objects::JObject<'local>>
+    {
+        fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JBoolean> {
+            let obj = self.l().j_catch_ini(env, "JObject -> JBoolean")?;
+            let bool: bool = obj.call_getter("booleanValue", env)?;
+            Ok(JBoolean(bool))
         }
     }
 
@@ -172,39 +281,30 @@ mod java_to_rust {
             Ok(self)
         }
     }
-}
 
-pub use java_getters::*;
-mod java_getters {
-    use super::*;
-
-    // Getters
-    pub trait JObjectGetters<'local> {
-        fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>
-        where
-            T: JTypeInfo,
-            jni::objects::JValueGen<jni::objects::JObject<'local>>:
-                java_to_rust::IntoRustType<'local, T>;
+    impl<'local> IntoRustType<'local, jni::objects::JByteArray<'local>>
+        for jni::objects::JByteArray<'local>
+    {
+        fn into_rust(
+            self,
+            _: &mut jni::JNIEnv<'local>,
+        ) -> crate::JResult<jni::objects::JByteArray<'local>> {
+            Ok(self)
+        }
     }
 
-    impl<'l> JObjectGetters<'l> for jni::objects::JObject<'l> {
-        fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'l>) -> crate::JResult<T>
-        where
-            T: JTypeInfo,
-            jni::objects::JValueGen<jni::objects::JObject<'l>>: IntoRustType<'l, T>,
-        {
-            let ty = T::j_type().to_string();
-            let e = env
-                .call_method(self, name, format!("(){ty}"), &[])
-                .j_catch(env)?;
-
-            e.into_rust(env)
+    impl<'local> IntoRustType<'local, jni::objects::JObject<'local>> for jni::objects::JObject<'local> {
+        fn into_rust(
+            self,
+            _: &mut jni::JNIEnv<'local>,
+        ) -> crate::JResult<jni::objects::JObject<'local>> {
+            Ok(self)
         }
     }
 }
 
-pub use rust_to_java::*;
-mod rust_to_java {
+pub use r2j::*;
+mod r2j {
     use crate::exception::*;
 
     // Rust to Java
@@ -226,7 +326,7 @@ mod rust_to_java {
         }
     }
 
-    // jni types (self impl)
+    // Raw types (JNI)
 
     impl<'local> IntoJavaType<'local> for jni::objects::JObject<'local> {
         type JType = jni::objects::JObject<'local>;
@@ -238,6 +338,14 @@ mod rust_to_java {
 
     impl<'local> IntoJavaType<'local> for jni::objects::JString<'local> {
         type JType = jni::objects::JString<'local>;
+
+        fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
+            Ok(self)
+        }
+    }
+
+    impl<'local> IntoJavaType<'local> for jni::objects::JByteArray<'local> {
+        type JType = jni::objects::JByteArray<'local>;
 
         fn into_java(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             Ok(self)
@@ -331,13 +439,13 @@ mod rust_to_java {
         type JType = jni::objects::JObject<'local>;
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
-            let args = &[jni::objects::JValue::Byte(self.0 as i8)];
-            let class = env.find_class("java/lang/Byte").j_catch(env)?;
+            let args = &[jni::objects::JValue::Byte(self.0)];
+            let class = env.find_class("java/lang/Byte").j_catch_ini(env, "JByte -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(B)Ljava/lang/Byte;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JByte -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JByte -> JObject")
         }
     }
 
@@ -346,12 +454,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Short(self.0)];
-            let class = env.find_class("java/lang/Short").j_catch(env)?;
+            let class = env.find_class("java/lang/Short").j_catch_ini(env, "JShort -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(S)Ljava/lang/Short;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JShort -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JShort -> JObject")
         }
     }
 
@@ -360,12 +468,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Int(self.0)];
-            let class = env.find_class("java/lang/Integer").j_catch(env)?;
+            let class = env.find_class("java/lang/Integer").j_catch_ini(env, "JInt -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(I)Ljava/lang/Integer;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JInt -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JInt -> JObject")
         }
     }
 
@@ -374,12 +482,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Long(self.0)];
-            let class = env.find_class("java/lang/Long").j_catch(env)?;
+            let class = env.find_class("java/lang/Long").j_catch_ini(env, "JLong -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(J)Ljava/lang/Long;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JLong -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JLong -> JObject")
         }
     }
 
@@ -388,12 +496,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Float(self.0)];
-            let class = env.find_class("java/lang/Float").j_catch(env)?;
+            let class = env.find_class("java/lang/Float").j_catch_ini(env, "JFloat -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(F)Ljava/lang/Float;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JFloat -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JFloat -> JObject")
         }
     }
 
@@ -402,12 +510,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Double(self.0)];
-            let class = env.find_class("java/lang/Double").j_catch(env)?;
+            let class = env.find_class("java/lang/Double").j_catch_ini(env, "JDouble -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(D)Ljava/lang/Double;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JDouble -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JDouble -> JObject")
         }
     }
 
@@ -416,12 +524,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Bool(self.0 as u8)];
-            let class = env.find_class("java/lang/Boolean").j_catch(env)?;
+            let class = env.find_class("java/lang/Boolean").j_catch_ini(env, "JBoolean -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(Z)Ljava/lang/Boolean;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JBoolean -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JBoolean -> JObject")
         }
     }
 
@@ -430,12 +538,12 @@ mod rust_to_java {
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
             let args = &[jni::objects::JValue::Char(self.0 as u16)];
-            let class = env.find_class("java/lang/Character").j_catch(env)?;
+            let class = env.find_class("java/lang/Character").j_catch_ini(env, "JChar -> JObject")?;
             let obj = env
                 .call_static_method(class, "valueOf", "(C)Ljava/lang/Character;", args)
-                .j_catch(env)?;
+                .j_catch_ini(env, "JChar -> JObject")?;
 
-            obj.l().j_catch(env)
+            obj.l().j_catch_ini(env, "JChar -> JObject")
         }
     }
 
@@ -445,7 +553,7 @@ mod rust_to_java {
         type JType = jni::objects::JByteArray<'local>;
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
-            env.byte_array_from_slice(&self).j_catch(env)
+            env.byte_array_from_slice(&self).j_catch_ini(env, "Vec<u8> -> JByteArray")
         }
     }
 
@@ -453,7 +561,7 @@ mod rust_to_java {
         type JType = jni::objects::JByteArray<'local>;
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
-            env.byte_array_from_slice(&self).j_catch(env)
+            env.byte_array_from_slice(self).j_catch_ini(env, "&[u8] -> JByteArray")
         }
     }
 
@@ -463,7 +571,7 @@ mod rust_to_java {
         type JType = jni::objects::JString<'local>;
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
-            env.new_string(self).j_catch(env)
+            env.new_string(self).j_catch_ini(env, "String -> JString")
         }
     }
 
@@ -471,21 +579,20 @@ mod rust_to_java {
         type JType = jni::objects::JString<'local>;
 
         fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Self::JType> {
-            env.new_string(self).j_catch(env)
+            env.new_string(self).j_catch_ini(env, "&str -> JString")
         }
     }
 }
 
-pub use java_types::*;
+pub use jtypes::*;
 
-use crate::prelude::JavaCatch;
-mod java_types {
+mod jtypes {
     use jni::{
         objects::{JObject, JValue, JValueOwned},
         signature::{JavaType, ReturnType},
     };
 
-    use crate::{prelude::JavaCatch, JResult};
+    use crate::{prelude::JavaCatchINI, JResult};
 
     // Signature Builder
     #[doc(hidden)]
@@ -788,10 +895,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Byte").j_catch(env)?;
-            let args = &[JValue::Byte(self.0 as i8)];
+            let class = env.find_class("java/lang/Byte").j_catch_ini(env, "i8 -> JByte")?;
+            let args = &[JValue::Byte(self.0)];
             env.call_static_method(class, "valueOf", "(B)Ljava/lang/Byte;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "i8 -> JByte")
         }
     }
 
@@ -808,10 +915,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Short").j_catch(env)?;
-            let args = &[JValue::Short(self.0 as i16)];
+            let class = env.find_class("java/lang/Short").j_catch_ini(env, "i16 -> JShort")?;
+            let args = &[JValue::Short(self.0)];
             env.call_static_method(class, "valueOf", "(S)Ljava/lang/Short;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "i16 -> JShort")
         }
     }
 
@@ -828,10 +935,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Integer").j_catch(env)?;
-            let args = &[JValue::Int(self.0 as i32)];
+            let class = env.find_class("java/lang/Integer").j_catch_ini(env, "i32 -> JInt")?;
+            let args = &[JValue::Int(self.0)];
             env.call_static_method(class, "valueOf", "(I)Ljava/lang/Integer;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "i32 -> JInt")
         }
     }
 
@@ -848,10 +955,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Long").j_catch(env)?;
-            let args = &[JValue::Long(self.0 as i64)];
+            let class = env.find_class("java/lang/Long").j_catch_ini(env, "i64 -> JLong")?;
+            let args = &[JValue::Long(self.0)];
             env.call_static_method(class, "valueOf", "(J)Ljava/lang/Long;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "i64 -> JLong")
         }
     }
 
@@ -868,10 +975,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Float").j_catch(env)?;
+            let class = env.find_class("java/lang/Float").j_catch_ini(env, "f32 -> JFloat")?;
             let args = &[JValue::Float(self.0)];
             env.call_static_method(class, "valueOf", "(F)Ljava/lang/Float;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "f32 -> JFloat")
         }
     }
 
@@ -888,10 +995,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Double").j_catch(env)?;
+            let class = env.find_class("java/lang/Double").j_catch_ini(env, "f64 -> JDouble")?;
             let args = &[JValue::Double(self.0)];
             env.call_static_method(class, "valueOf", "(D)Ljava/lang/Double;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "f64 -> JDouble")
         }
     }
 
@@ -908,10 +1015,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Boolean").j_catch(env)?;
+            let class = env.find_class("java/lang/Boolean").j_catch_ini(env, "bool -> JBoolean")?;
             let args = &[JValue::Bool(self.0 as u8)];
             env.call_static_method(class, "valueOf", "(Z)Ljava/lang/Boolean;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "bool -> JBoolean")
         }
     }
 
@@ -928,10 +1035,10 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let class = env.find_class("java/lang/Character").j_catch(env)?;
+            let class = env.find_class("java/lang/Character").j_catch_ini(env, "char -> JChar")?;
             let args = &[JValue::Char(self.0 as u16)];
             env.call_static_method(class, "valueOf", "(C)Ljava/lang/Character;", args)
-                .j_catch(env)
+                .j_catch_ini(env, "char -> JChar")
         }
     }
 
@@ -950,7 +1057,7 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let obj = env.new_string(&self).j_catch(env)?;
+            let obj = env.new_string(&self).j_catch_ini(env, "String -> JString")?;
             Ok(JValueOwned::Object(JObject::from(obj)))
         }
     }
@@ -970,7 +1077,7 @@ mod java_types {
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
-            let array = env.byte_array_from_slice(&self).j_catch(env)?;
+            let array = env.byte_array_from_slice(&self).j_catch_ini(env, "Vec<u8> -> JByteArray")?;
             Ok(JValueOwned::Object(JObject::from(array)))
         }
     }

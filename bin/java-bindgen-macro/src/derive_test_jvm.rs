@@ -15,7 +15,7 @@ pub fn main(_attr: TokenStream, item: TokenStream) -> TokenStream {
             let example = format!(r#"
 
 Example:
-fn {}<'a>(
+fn {fn_name}<'a>(
     test_env: &mut JNIEnv<'a>,
     env: JNIEnv<'a>,
     class: JClass
@@ -23,7 +23,7 @@ fn {}<'a>(
     // your code
     Ok(())
 }}
-            "#, fn_name.to_string());
+            "#);
     
             errors.add_spaned(java_fn.sig.inputs.span(), format!("{msg}{example}"));
             return quote! {
@@ -34,7 +34,7 @@ fn {}<'a>(
 
         // todo validate test fn signature
 
-        let expect = crate::util::ts2(&format!("\"JVM failed! {}\"", fn_name.to_string()));
+        let expect = crate::util::ts2(&format!("\"JVM failed! {fn_name}\""));
         return quote! {
 
             #errors

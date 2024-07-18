@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![forbid(unsafe_code, clippy::unwrap_used)]
 
 pub use jni;
 pub mod exception;
@@ -11,7 +12,7 @@ pub mod test_utils;
 pub extern crate java_bindgen_macro as derive;
 
 pub mod prelude {
-    pub use crate::derive::{java_bindgen, java_bindgen_raw, test_jvm, IntoJava, IntoRust, JLogger};
+    pub use crate::derive::{java_bindgen, test_jvm, IntoJava, IntoRust, JLogger};
     pub use crate::interop::*;
     pub use crate::signature_by_type;
     pub use jni;

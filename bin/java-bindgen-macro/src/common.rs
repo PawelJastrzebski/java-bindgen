@@ -30,7 +30,7 @@ pub fn produce_java_args(
 }
 
 pub fn produce_java_return(return_type: &TokenStream2, errors: &mut CompileErrors) -> String {
-    if let Some(new_type) = rewrite_rust_to_java(&return_type, errors) {
+    if let Some(new_type) = rewrite_rust_to_java(return_type, errors) {
         return new_type;
     }
 
@@ -46,7 +46,7 @@ pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors)
                         r_type.span(),
                         format!(
                             "Expected java_bindgen::JResult<{}>",
-                            r_type.to_token_stream().to_string().replace(" ", "")
+                            r_type.to_token_stream().to_string().replace(' ', "")
                         ),
                     );
 
@@ -81,7 +81,7 @@ pub fn produce_rust_args_names(
                 args.append_all(quote! { self });
             }
             FnArg::Typed(typed) => {
-                let type_string = typed.ty.to_token_stream().to_string().replace(" ", "");
+                let type_string = typed.ty.to_token_stream().to_string().replace(' ', "");
                 let mut is_mute = quote! {};
                 if type_string.contains("&mut") {
                     is_mute = quote! { &mut }
@@ -112,7 +112,7 @@ pub fn to_java_type(rust_type: &Type, errors: &mut CompileErrors) -> Option<Stri
         None
     };
 
-    let rust_type_str = rust_type.to_token_stream().to_string().replace(" ", "");
+    let rust_type_str = rust_type.to_token_stream().to_string().replace(' ', "");
     match rust_type {
         Type::Array(_) => add_error("array"),
         Type::BareFn(_) => add_error("bare function"),
@@ -161,7 +161,7 @@ pub fn produce_java_class_ffi_types(
     let mut java_types = vec![];
     for (name, ty) in rust_types {
         let Some(java_ty) = crate::types_conversion::rewrite_rust_to_java(&ty.to_token_stream(), errors) else {
-            return None;
+            continue;
         };
         java_types.push((name.to_string(), java_ty));
     }

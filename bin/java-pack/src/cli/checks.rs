@@ -36,44 +36,44 @@ impl SystemSetupStatus {
     }
 
     fn check_java(dir: &Path) -> Option<String> {
-        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "java --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(dir, "java --version");
         if code != 0 {
             return None;
         }
-        if let Some(line) = out.lines().into_iter().next() {
+        if let Some(line) = out.lines().next() {
             return Some(line.to_string());
         }
         None
     }
 
     fn check_maven(dir: &Path) -> Option<String> {
-        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "mvn --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(dir, "mvn --version");
         if code != 0 {
             return None;
         }
-        if let Some(line) = out.lines().into_iter().next() {
+        if let Some(line) = out.lines().next() {
             return Some(line.to_string());
         }
         None
     }
 
     fn check_cargo(dir: &Path) -> Option<String> {
-        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "cargo --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(dir, "cargo --version");
         if code != 0 {
             return None;
         }
-        if let Some(line) = out.lines().into_iter().next() {
+        if let Some(line) = out.lines().next() {
             return Some(line.to_string());
         }
         None
     }
 
     fn check_gradle(dir: &Path) -> Option<String> {
-        let (code, out, _err) = cli_utils::exec_command_silent(&dir, "gradle --version");
+        let (code, out, _err) = cli_utils::exec_command_silent(dir, "gradle --version");
         if code != 0 {
             return None;
         }
-        if let Some(line) = out.lines().into_iter().next() {
+        if let Some(line) = out.lines().next() {
             return Some(line.to_string());
         }
         None
@@ -81,10 +81,10 @@ impl SystemSetupStatus {
 
     pub fn check(dir: &Path) -> SystemSetupStatus {
         SystemSetupStatus {
-            java_version: SystemSetupStatus::check_java(&dir),
-            mvn_version: SystemSetupStatus::check_maven(&dir),
-            cargo_version: SystemSetupStatus::check_cargo(&dir),
-            gradle_version: SystemSetupStatus::check_gradle(&dir),
+            java_version: SystemSetupStatus::check_java(dir),
+            mvn_version: SystemSetupStatus::check_maven(dir),
+            cargo_version: SystemSetupStatus::check_cargo(dir),
+            gradle_version: SystemSetupStatus::check_gradle(dir),
         }
     }
 }
@@ -110,7 +110,7 @@ impl CargoSetupStatus {
         if let Some(java_bindgen) = java_bindgen {
             if let Some(ref package) = java_bindgen.package {
                 // todo validate java package name
-                return package.len() > 0;
+                return !package.is_empty()
             }
         }
         false
@@ -118,7 +118,7 @@ impl CargoSetupStatus {
 
     pub fn check(dir: &Path) -> Self {
         let toml_path = dir.join("Cargo.toml");
-        if let Some(CargoTomlFile { toml_parsed, .. }) = parse_toml(&toml_path).ok() {
+        if let Ok(CargoTomlFile { toml_parsed, .. }) = parse_toml(&toml_path) {
             return CargoSetupStatus {
                 cargo_toml_present: true,
                 cargo_lib_setup: Self::check_lib_setup(toml_parsed.lib.as_ref()),
@@ -200,11 +200,11 @@ impl CheckResult {
         self.system.pretty_print();
         println!("{}    {}", flabel(""), self.system.get_status());
 
-        println!("");
+        println!();
 
         println!("{}", header("Rust Project"));
         self.cargo.pretty_print();
         println!("{}    {}", flabel(""), self.cargo.get_status());
-        println!("");
+        println!();
     }
 }

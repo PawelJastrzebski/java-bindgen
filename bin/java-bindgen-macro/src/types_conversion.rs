@@ -4,7 +4,7 @@ use syn::__private::TokenStream2;
 
 // rewrite [Rust] to [Java Type]
 pub fn rewrite_rust_to_java(ty: &TokenStream2, _errors: &mut CompileErrors) -> Option<String> {
-    let rust_type = ty.to_string().replace(" ", "");
+    let rust_type = ty.to_string().replace(' ', "");
 
     // ignored types
     if rust_type.contains("JNIEnv") {
@@ -136,14 +136,23 @@ pub fn rewrite_rust_type_to_jni(
     lifetime: &TokenStream2,
     _errors: &mut CompileErrors,
 ) -> Option<TokenStream2> {
-    let rust_type = ty.to_string().replace(" ", "");
+    let rust_type = ty.to_string().replace(' ', "");
 
-    // ignored types
-    if rust_type.contains("JNIEnv") {
+    // Ignored types
+    if rust_type.contains("JNIEnv<") {
         return None;
     };
-    if rust_type.contains("JClass") {
+    if rust_type.contains("JClass<") {
         return None;
+    };
+
+    // JNI Types
+
+    if rust_type.contains("JString<") {
+        return Some(quote! { jni::objects::JString #lifetime });
+    };
+    if rust_type.contains("JByteArray<") {
+        return Some(quote! { jni::objects::JByteArray #lifetime });
     };
 
     if OBJECT_TYPES.contains(&rust_type.as_str()) {
@@ -177,18 +186,8 @@ pub fn rewrite_rust_type_to_jni(
         return Some(quote! { jni::sys::jchar });
     };
 
-
-    // JNI Types
-
-    if rust_type.contains("JString<") {
-        return Some(quote! { jni::objects::JString #lifetime });
-    };    
-
-    // _errors.add_spaned(ty.span(), rust_type.clone());
-
     // Typed Objects
 
-    
     if rust_type == "String" {
         return Some(quote! { jni::objects::JString #lifetime });
     };

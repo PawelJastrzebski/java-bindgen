@@ -51,7 +51,7 @@ java-pack info
 
 ## Example
 
-☢️ `The following examples do not compile due to missing configurations in the Cargo.toml file.` ☢️
+☢️ The following examples do not compile due to missing configurations in the Cargo.toml file. ☢️
 
 lib.rs
 ```rust compile_fail
@@ -114,6 +114,15 @@ java-pack test
 <br />
 <br />
 
+## Safety 🛡️
+
+Although this crate forbids `unsafe` code, the underlying `JNI` (Java Native Interface) itself is **not inherently safe**. Therefore, thorough **testing is required** to ensure that your software is safe to run. 
+
+🚨 Any Rust panic that is not handled on the Rust side will cause the JVM to crash. 🚨
+
+<br />
+<br />
+
 # Project 📦
 
 #### Project structure 📌
@@ -131,6 +140,12 @@ Project is in early state of development. Each release is prior tested but api c
 To be determined. If you like the project, please consider giving it a ⭐, filing an issue ❗, or submitting a pull request (PR) ✅. Your feedback and contributions are highly appreciated! 
 
 - [GitHub](https://github.com/PawelJastrzebski/java-bindgen)
+
+
+#### Alpha ❗
+
+This crate was developed and tested on Linux so more tests are needed to ensure that it works on all platforms. Multiplatform jar support allso needs more testing.
+
 
 <br />
 
@@ -156,8 +171,46 @@ output
 ```sh
 [main] INFO  com.test.macro.TestMacro  - Hello Java Bindgen, Welcome to Rust!
 ```
+
+#### Exception Handling
+```rust compile_fail
+#[java_bindgen]
+fn raw_object_to_string<'a>(env: &mut JNIEnv<'a>, input: JObject<'a>) -> JResult<String> {
+    let input_str: String = input.into_rust(env)?;
+    Ok(input_str)
+}
+```
+Java signature:
+```java
+String raw_object_to_string(Object input)
+```
+When Java pass non String Object:
+```sh
+java.lang.UnsupportedOperationException:
+Rust Error:  JNI call failed
+   Cause: Cast failed [JObject -> String]
+Rust Backtrace:
+   0: <core::result::Result<T,E> as java_bindgen::exception::JavaCatch<T>>::j_catch_cause
+             at /Projects/java_bindgen/src/exception.rs:145:17
+   1: <jni::wrapper::objects::jobject::JObject as java_bindgen::interop::java_to_rust::IntoRustType<alloc::string::String>>::into_rust
+             at /Projects/java_bindgen/src/interop.rs:87:13
+   2: test_macro::raw_input_type::raw_input_type_2
+             at /Projects/java_bindgen/examples/test-macro/src/lib.rs:390:33
+   3: Java_com_test_macro_TestMacro_raw_1input_1type_12
+             at /Projects/java_bindgen/examples/test-macro/src/lib.rs:388:5
+   4: <unknown>
+```
+
 <br />
 
-## Full Examples
+## Full Examples 🧭
 For full examples visit: 
 [github.com/java-bindgen/examples](https://github.com/PawelJastrzebski/java-bindgen/tree/main/examples)
+
+<br />
+
+## Acknowledgments 💌
+This crate strongly relies on the [jni](https://crates.io/crates/jni) crate. Without it, this project would not have been possible. A big `Thank you` to the jni crate team for their hard work and dedication!
+
+<br />
+<br />

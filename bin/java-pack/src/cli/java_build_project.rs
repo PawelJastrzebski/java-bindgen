@@ -28,7 +28,7 @@ pub fn produce_java_classes(project_info: &ProjectInfo, ffi: &FFIStore) -> Vec<J
         let class_fields: Vec<String> = class
             .fields
             .iter()
-            .map(|f| format!("\tfinal {} {};", f.1, f.0))
+            .map(|f| format!("\t{} {};", f.1, f.0))
             .collect();
 
         let file_content = JAVA_CLASS_TEMPLATE
@@ -50,7 +50,7 @@ pub fn process_template(
     template: &str,
     project_info: &ProjectInfo,
     ffi: &FFIStore,
-    java_clesses: &Vec<JavaClass>,
+    java_clesses: &[JavaClass],
 ) -> String {
     let date = chrono::Local::now().to_utc();
     let release_date = date.format("%Y-%m-%d %H:%M:%S UTC").to_string();
@@ -103,14 +103,14 @@ pub fn setup_java_project(
 ) -> color_eyre::Result<()> {
     // Create directory
     let java_dir = create_or_get_dir(java_dir)?;
-    let ffi_store = FFIStore::open_read_only(&consts::ffi_definitions_path(&project_dir));
-    let java_classes = produce_java_classes(&project_info, &ffi_store);
+    let ffi_store = FFIStore::open_read_only(&consts::ffi_definitions_path(project_dir));
+    let java_classes = produce_java_classes(project_info, &ffi_store);
 
     // Create pom
     create_file(
         &java_dir,
         "pom.xml",
-        &process_template(POM_TEMPLATE, &project_info, &ffi_store, &java_classes),
+        &process_template(POM_TEMPLATE, project_info, &ffi_store, &java_classes),
     )?;
 
     let src = create_or_get_dir(&java_dir.join("src"))?;
@@ -128,7 +128,7 @@ pub fn setup_java_project(
     create_file(
         &lib_java_class_directory,
         &format!("{}.java", project_info.get_java_class_name()),
-        &process_template(JAVA_LIB_TEMPLATE, &project_info, &ffi_store, &java_classes),
+        &process_template(JAVA_LIB_TEMPLATE, project_info, &ffi_store, &java_classes),
     )?;
 
     // Create classes
@@ -172,7 +172,7 @@ pub fn build_jar(
     // Build Jar
 
     // cli_utils::exec_command(&java_dir, "mvn clean install -U", "Clean cache")?;
-    cli_utils::exec_command(&java_dir, "mvn clean install compile assembly:single -U", "Jar")
+    cli_utils::exec_command(java_dir, "mvn clean install compile assembly:single -U", "Jar")
 }
 
 fn get_file_if_exist(file: &Path) -> Option<PathBuf> {
@@ -184,7 +184,7 @@ fn get_file_if_exist(file: &Path) -> Option<PathBuf> {
         return None;
     }
 
-    return Some(file.to_owned());
+    Some(file.to_owned())
 }
 
 fn find_lib(dir: &Path, lib_name: &str) -> RustBinaryInfo {
@@ -193,7 +193,7 @@ fn find_lib(dir: &Path, lib_name: &str) -> RustBinaryInfo {
     let mac_binary = dir.join(format!("lib{lib_name}.dylib"));
 
     RustBinaryInfo {
-        linux_binary_path: get_file_if_exist(&&linux_binary),
+        linux_binary_path: get_file_if_exist(&linux_binary),
         mac_binary_path: get_file_if_exist(&mac_binary),
         windows_binary_path: get_file_if_exist(&windows_binary),
     }

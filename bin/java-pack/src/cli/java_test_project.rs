@@ -25,7 +25,7 @@ pub fn setup_tests_java_project(
     project_dir: &Path,
     project_info: &ProjectInfo,
 ) -> color_eyre::Result<()> {
-    let test_dir = project_dir.join(&project_info.tests_java_dir_name());
+    let test_dir = project_dir.join(project_info.tests_java_dir_name());
     if test_dir.exists() {
         // todo validate project
         return Ok(());
@@ -42,28 +42,28 @@ pub fn setup_tests_java_project(
     create_file(
         &test_dir,
         "pom.xml",
-        &process_template(JAVA_TEST_POM_TEMPLATE, &project_info),
+        &process_template(JAVA_TEST_POM_TEMPLATE, project_info),
     )?;
 
     // Create pom
     create_file(
         &test_dir,
         ".gitignore",
-        &process_template(JAVA_TEST_GIT_IGNORE, &project_info),
+        &process_template(JAVA_TEST_GIT_IGNORE, project_info),
     )?;    
     
     // Create pom
     create_file(
         &resources,
         "log4j.properties",
-        &process_template(JAVA_TEST_LOG4J_PROPERTIES, &project_info),
+        &process_template(JAVA_TEST_LOG4J_PROPERTIES, project_info),
     )?;
 
     // Create test file
     create_file(
         &java_bindgen,
         &format!("{}Test.java", &project_info.get_java_class_name()),
-        &process_template(JAVA_TEST_TEMPLATE, &project_info),
+        &process_template(JAVA_TEST_TEMPLATE, project_info),
     )?;
 
     Ok(())
@@ -74,7 +74,7 @@ pub fn install_jar(
     jar_path: &Path,
     project_info: &ProjectInfo,
 ) -> color_eyre::Result<()> {
-    let test_dir = project_dir.join(&project_info.tests_java_dir_name());
+    let test_dir = project_dir.join(project_info.tests_java_dir_name());
     if !test_dir.exists() {
         return Ok(())
     }
@@ -104,7 +104,7 @@ pub fn runt_tests(
     project_dir: &Path,
     project_info: &ProjectInfo,
 ) -> color_eyre::Result<()> {
-    let test_dir = project_dir.join(&project_info.tests_java_dir_name());
+    let test_dir = project_dir.join(project_info.tests_java_dir_name());
     if !test_dir.exists() {
         return Ok(())
     }

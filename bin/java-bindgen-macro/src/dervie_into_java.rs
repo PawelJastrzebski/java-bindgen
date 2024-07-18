@@ -28,7 +28,7 @@ pub fn main(item: TokenStream) -> TokenStream {
         };
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(&project_dir) {
+        let cargo_toml = match util::parse_project_toml(project_dir) {
             Ok(toml) => toml,
             Err(err) => {
                 let error = util::error(input.ident.span(), err.to_string());
@@ -46,7 +46,7 @@ pub fn main(item: TokenStream) -> TokenStream {
             .into();
         };
 
-        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
+        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
             store.add_ffi_class(JavaFFIClass {
                 id: name.to_string(),
                 fields: java_fields,

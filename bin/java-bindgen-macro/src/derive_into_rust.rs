@@ -30,7 +30,7 @@ pub fn main(item: TokenStream) -> TokenStream {
             .into();
         };
 
-        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
+        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
             store.add_ffi_class(JavaFFIClass {
                 id: name.to_string(),
                 fields: java_fields,

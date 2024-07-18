@@ -71,7 +71,7 @@ pub fn parse_toml(path: &Path) -> Result<CargoTomlFile, TomlParseError> {
         return Err(TomlParseError::Invalid(toml_path));
     }
 
-    let Ok(toml_content) = std::fs::read_to_string(&path) else {
+    let Ok(toml_content) = std::fs::read_to_string(path) else {
         return Err(TomlParseError::FailedToOpen(toml_path));
     };
 

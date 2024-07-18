@@ -1,6 +1,5 @@
 // Test case (All macro should compile)
 
-// Return types
 pub mod return_types {
     use java_bindgen::prelude::*;
 
@@ -132,15 +131,14 @@ pub mod return_types {
     #[java_bindgen]
     fn returns_JBoolean() -> JResult<JBoolean> {
         Ok(JBoolean(true))
-    }  
-    
+    }
+
     #[java_bindgen]
     fn returns_JChar() -> JResult<JChar> {
         Ok(JChar('y'))
     }
 }
 
-// Input types
 pub mod input_types {
     use java_bindgen::prelude::*;
 
@@ -185,7 +183,6 @@ pub mod input_types {
     }
 }
 
-// Pass types
 pub mod pass_types {
     use java_bindgen::prelude::*;
 
@@ -230,14 +227,13 @@ pub mod pass_types {
     }
 }
 
-// Return Custom Class
-pub mod custom_type {
+pub mod return_custom_type {
     use java_bindgen::prelude::*;
 
     #[derive(Default, IntoJava, IntoRust)]
     struct UserClass {
         name: String,
-        age: i32
+        age: i32,
     }
 
     #[java_bindgen]
@@ -274,9 +270,25 @@ pub mod custom_type {
     fn pass_all_types(object: AllJavaTypes) -> JResult<AllJavaTypes> {
         Ok(object)
     }
+
+    #[derive(Default, IntoJava, IntoRust)]
+    struct JavaClassWrappers {
+        java_b: JByte,
+        java_s: JShort,
+        java_i: JInt,
+        java_l: JLong,
+        java_f: JFloat,
+        java_d: JDouble,
+        java_c: JChar,
+        java_bool: JBoolean,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_wrappers(object: JavaClassWrappers) -> JResult<JavaClassWrappers> {
+        Ok(object)
+    }
 }
 
-// Logger
 pub mod java_logger {
     use java_bindgen::prelude::*;
 
@@ -295,7 +307,146 @@ pub mod java_logger {
         logger.trace("This is [trace] level", env);
         Ok(())
     }
+}
 
+pub mod raw_types_order {
+    use java_bindgen::prelude::*;
+
+    #[java_bindgen]
+    fn test_raw_types_1<'a>(e: &mut JNIEnv<'a>, name: String) -> JResult<String> {
+        let _ = e;
+        Ok(name)
+    }
+
+    #[java_bindgen]
+    fn test_raw_types_2<'a>(name: String, env: &mut JNIEnv<'a>) -> JResult<String> {
+        let _ = env;
+        let _ = name;
+        Ok(name)
+    }
+
+    #[java_bindgen]
+    fn test_raw_types_3<'a>(_c: JClass<'a>, env: &mut JNIEnv<'a>, name: String) -> JResult<String> {
+        let _ = env;
+        let _ = _c;
+        Ok(name)
+    }
+
+    #[java_bindgen]
+    fn test_raw_types_4<'a>(name: String, cl: JClass<'a>, env: &mut JNIEnv<'a>) -> JResult<String> {
+        let _ = env;
+        let _ = cl;
+        Ok(name)
+    }
+
+    #[java_bindgen]
+    fn test_raw_types_5<'a>(c: JClass<'a>, n: String, e: &mut JNIEnv<'a>) -> JResult<String> {
+        let _ = e;
+        let _ = c;
+        Ok(n)
+    }
+
+    #[java_bindgen]
+    fn test_raw_types_6<'a>(_: JClass<'a>, name: String, env: &mut JNIEnv<'a>) -> JResult<String> {
+        let _ = env;
+        Ok(name)
+    }
+
+    #[java_bindgen]
+    fn test_raw_types_7<'a>(_: JClass<'a>, name: String, _: &mut JNIEnv<'a>) -> JResult<String> {
+        Ok(name)
+    }
+}
+
+pub mod raw_return_type {
+    use java_bindgen::prelude::*;
+
+    #[derive(IntoJava)]
+    struct EmptyClass {}
+
+    #[java_bindgen(return = EmptyClass)]
+    fn raw_return_object<'a>(env: &mut JNIEnv<'a>, _class: JClass<'_>) -> JResult<JObject<'a>> {
+        let empty = EmptyClass {};
+        empty.into_java(env)
+    }
+
+    #[java_bindgen(return = String)]
+    fn raw_return_string_1<'a>(env: &mut JNIEnv<'a>, _class: JClass<'_>) -> JResult<JString<'a>> {
+        "Hello".into_java(env)
+    }
+
+    #[java_bindgen]
+    fn raw_return_string_2<'a>(env: &mut JNIEnv<'a>, _class: JClass<'_>) -> JResult<JString<'a>> {
+        "Hello".into_java(env)
+    }
+
+    #[java_bindgen]
+    fn raw_return_bytes<'a>(env: &mut JNIEnv<'a>, bytes: Vec<u8>) -> JResult<JByteArray<'a>> {
+        bytes.into_java(env)
+    }
+}
+
+pub mod raw_input_type {
+    use java_bindgen::prelude::*;
+
+    #[java_bindgen]
+    fn raw_input_type_1<'a>(env: &mut JNIEnv<'a>, input: JString<'a>) -> JResult<String> {
+        let input_str: String = input.into_rust(env)?;
+        Ok(input_str)
+    }
+
+    #[java_bindgen]
+    fn raw_input_type_2<'a>(env: &mut JNIEnv<'a>, input: JObject<'a>) -> JResult<String> {
+        let input_str: String = input.into_rust(env)?;
+        Ok(input_str)
+    }
+
+    #[java_bindgen]
+    fn raw_input_type_3<'a>(env: &mut JNIEnv<'a>, input: JByteArray<'a>) -> JResult<Vec<u8>> {
+        let bytes: Vec<u8> = input.into_rust(env)?;
+        Ok(bytes)
+    }
+}
+
+pub mod throw_exception {
+    use java_bindgen::prelude::*;
+
+    #[java_bindgen]
+    fn should_throw_exception_1<'a>(env: &mut JNIEnv<'a>, nr: i32) -> JResult<i32> {
+        env.j_throw_msg("[err_message_1]");
+        Ok(nr)
+    }
+
+    #[java_bindgen]
+    fn should_throw_exception_2<'a>(env: &mut JNIEnv<'a>, nr: i32) -> JResult<i32> {
+        env.j_throw_cause(
+            JExceptionClass::ArithmeticException,
+            &std::io::Error::other("[err_message_2]"),
+        );
+        Ok(nr)
+    }
+
+    #[java_bindgen]
+    fn should_throw_exception_3<'a>(env: &mut JNIEnv<'a>, nr: i32) -> JResult<i32> {
+        env.j_throw(JExceptionClass::IllegalStateException);
+        Ok(nr)
+    }
+
+    #[java_bindgen]
+    fn should_throw_exception_4<'a>(_: &mut JNIEnv<'a>, _nr: i32) -> JResult<i32> {
+        Err(JExceptionClass::SecurityException.into())
+    }
+
+    #[java_bindgen]
+    fn should_throw_exception_5<'a>(env: &mut JNIEnv<'a>, _nr: i32) -> JResult<i32> {
+        Err(std::io::Error::other("Always Throw")).j_catch(env)?
+    }
+
+    #[java_bindgen]
+    fn should_throw_exception_in_order<'a>(env: &mut JNIEnv<'a>, _nr: i32) -> JResult<i32> {
+        env.j_throw(JExceptionClass::IndexOutOfBoundsException);
+        Err(JExceptionClass::UnsupportedOperationException.into())
+    }
 }
 
 #[cfg(test)]

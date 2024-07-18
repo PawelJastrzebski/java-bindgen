@@ -50,18 +50,19 @@ pub fn icon(kind: &str) -> String {
             .bold()
             .paint(" ✕ ")
             .to_string(),
-        "green" | "ok" | _ => COLOR_WHITE_RGB
+        "green" | "ok"  => COLOR_WHITE_RGB
             .on(COLOR_GREEN)
             .bold()
             .paint(" ✓ ")
             .to_string(),
+        _ => "".to_string()
     }
 }
 
 pub fn print_option(label: &str, version: Option<&String>, required: bool) {
     let label = flabel(label);
     if let Some(ref version) = version {
-        let version = strip_ansi_escapes::strip_str(&version);
+        let version = strip_ansi_escapes::strip_str(version);
         println!("{} {label}{}", icon("ok"), COLOR_GREEN.paint(version))
     } else if !required {
         println!(
@@ -76,12 +77,6 @@ pub fn print_option(label: &str, version: Option<&String>, required: bool) {
 
 pub fn flabel(label: &str) -> String {
     use pad::PadStr;
-    let label = if label.is_empty() {
-        label.to_string()
-    } else {
-        format!("{}", label)
-    };
-
     format!("{}", COLOR_WHITE.dimmed().bold().paint(label)).pad_to_width(40)
 }
 
@@ -141,8 +136,8 @@ pub fn exec_command(directory: &Path, command: &str, info: &str) -> color_eyre::
 
     // Spawn process
 
-    let command = command.replace("\n", " ").replace("\t", "");
-    let mut process = subprocess::Exec::shell(&format!("cd {} && {}", dir_path, command))
+    let command = command.replace('\n', " ").replace('\t', "");
+    let mut process = subprocess::Exec::shell(format!("cd {} && {}", dir_path, command))
         .stdout(subprocess::Redirection::Pipe)
         .stderr(subprocess::Redirection::Merge)
         .popen()?;

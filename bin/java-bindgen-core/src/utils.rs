@@ -17,7 +17,7 @@ pub enum CreateDirError {
 
 pub fn create_or_get_dir(directory: &Path) -> Result<PathBuf, CreateDirError> {
     if !directory.exists() {
-        fs::create_dir(&directory).map_err(|_| CreateDirError::FailedToCreate(directory.to_owned()))?;
+        fs::create_dir(directory).map_err(|_| CreateDirError::FailedToCreate(directory.to_owned()))?;
     }
     if !directory.is_dir() {
         return Err(CreateDirError::ExpectedDirectory(directory.to_owned()));

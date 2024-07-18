@@ -32,6 +32,9 @@ pub fn cli() -> color_eyre::Result<()> {
         .arg(arg!(
             -d --debug "Turn debugging information on"
         ))
+        .arg(arg!(
+            -r --release "Release mode"
+        ))
         .subcommand(Command::new("info").alias("i").about("Check project setup"))
         .subcommand(Command::new("build").alias("b").about("Build jar"))
         .subcommand(Command::new("jar").alias("j").about("Run jar"))
@@ -65,6 +68,7 @@ pub fn cli() -> color_eyre::Result<()> {
     };
 
     let _debug_mode = matches.get_flag("debug");
+    let release_mode = matches.get_flag("release");
 
     // Select Action
     let check_result = checks::CheckResult::check(&project_path);
@@ -74,7 +78,7 @@ pub fn cli() -> color_eyre::Result<()> {
     }
 
     if let Some(_args) = matches.subcommand_matches("new-test") {
-        commands::setup_test_project(&project_path)?
+        commands::setup_test_project(&project_path, release_mode)?
     }
 
     // Project config guard
@@ -92,16 +96,16 @@ pub fn cli() -> color_eyre::Result<()> {
         check_result.print_status()
     }
     if let Some(_args) = matches.subcommand_matches("build") {
-        commands::build(&project_path)?;
+        commands::build(&project_path, release_mode)?;
     }
     if let Some(_args) = matches.subcommand_matches("test") {
-        commands::run_tests(&project_path)?
+        commands::run_tests(&project_path, release_mode)?
     }
     if let Some(_args) = matches.subcommand_matches("clean") {
         commands::clear(&project_path)?
     }
     if let Some(_args) = matches.subcommand_matches("jar") {
-        commands::run_jar(&project_path)?
+        commands::run_jar(&project_path, release_mode)?
     }
 
     if matches.subcommand().is_none() {
