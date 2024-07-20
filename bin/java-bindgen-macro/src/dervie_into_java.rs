@@ -90,10 +90,8 @@ pub fn main(item: TokenStream) -> TokenStream {
 
             #errors
 
-            impl <'local> IntoJavaType<'local> for #name #ty_generics #where_clause {
-                type JType = JObject<'local>;
-
-                fn into_java(self, env: &mut jni::JNIEnv<'local>) -> JResult<Self::JType> {
+            impl <'local> IntoJavaType<'local, JObject<'local>> for #name #ty_generics #where_clause {
+                fn into_java(self, env: &mut jni::JNIEnv<'local>) -> JResult<JObject<'local>> {
                     let sig = signature_by_type!(#type_signature => JVoid);
 
                     #args_conversion

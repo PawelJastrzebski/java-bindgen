@@ -25,5 +25,5 @@ public class LibMetadataTest {
         TestMacro.loadNativeLibrary();
         TestMacro.loadNativeLibrary();
     }
-    
+
 }

@@ -35,6 +35,7 @@ impl JExceptionClass {
     }
 }
 
+// Convert JNI Error to JavaException (class)
 impl From<&jni::errors::Error> for JExceptionClass {
     fn from(value: &jni::errors::Error) -> Self {
         match value {
@@ -56,7 +57,7 @@ impl From<&jni::errors::Error> for JExceptionClass {
             jni::errors::Error::FieldAlreadySet(_) => JExceptionClass::IllegalStateException,
             jni::errors::Error::ThrowFailed(_) => JExceptionClass::IllegalStateException,
             jni::errors::Error::ParseFailed(_, _) => JExceptionClass::IllegalStateException,
-            jni::errors::Error::JniCall(_) => JExceptionClass::UnsupportedOperationException
+            jni::errors::Error::JniCall(_) => JExceptionClass::UnsupportedOperationException,
         }
     }
 }
@@ -137,12 +138,12 @@ impl std::fmt::Debug for JException {
 
 pub type JResult<T, E = JException> = core::result::Result<T, E>;
 
-pub fn j_result_handler<'a, T>(
+pub fn j_result_handler<'a, T, R: Default>(
     result: JResult<T, JException>,
     env: &mut jni::JNIEnv<'a>,
-) -> T::JType
+) -> R
 where
-    T: IntoJavaType<'a> + Default,
+    T: IntoJavaType<'a, R> + Default,
 {
     match result {
         Ok(ok) => match ok.into_java(env) {
