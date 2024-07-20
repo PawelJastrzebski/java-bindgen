@@ -64,11 +64,18 @@ pub fn main(item: TokenStream) -> TokenStream {
 
             #errors
 
-            impl<'local> IntoRustType<'local, #name> for jni::objects::JObject<'local> {
+            impl<'local> java_bindgen::prelude::IntoRustType<'local, #name> for jni::objects::JObject<'local> {
                 fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> JResult<#name> {
                     Ok(#name {
                         #fields_getters
                     })
+                }
+            }
+
+            impl<'local> java_bindgen::prelude::IntoRustType<'local, #name> for jni::objects::JValueGen<jni::objects::JObject<'local>> {
+                fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> JResult<#name> {
+                    let obj = self.l()?;
+                    obj.into_rust(env)
                 }
             }
 

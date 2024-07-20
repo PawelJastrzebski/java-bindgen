@@ -1,8 +1,8 @@
-use jni::objects::JObject;
 use crate::prelude::*;
+use jni::objects::JObject;
 
 // Rust to Java
-pub trait IntoJavaType<'local, T: Default> {
+pub trait IntoJavaType<'local, T: Default>{
     fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>;
 }
 

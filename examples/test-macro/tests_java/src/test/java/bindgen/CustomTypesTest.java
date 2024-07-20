@@ -1,11 +1,7 @@
 package bindgen;
 
-import com.test.macro.JavaClassWrappers;
+import com.test.macro.*;
 import org.junit.jupiter.api.Test;
-
-import com.test.macro.AllJavaTypes;
-import com.test.macro.TestMacro;
-import com.test.macro.UserClass;
 
 import java.util.Arrays;
 import java.util.List;
@@ -158,6 +154,20 @@ public class CustomTypesTest {
             assertEquals(java_c, list_res.get(0).getJava_c());
             assertEquals(java_bool, list_res.get(0).getJava_bool());
         }
+    }
+
+    @Test
+    public void pass_java_class_embeded() {
+        EmbededTypes input = EmbededTypes.builder()
+                .parent(new EmbededNode(10))
+                .children(Arrays.asList(new EmbededNode(120), new EmbededNode(310)))
+                .build();
+
+        EmbededTypes embeded_result = TestMacro.pass_java_class_embeded(input);
+        System.out.println(embeded_result);
+        assertEquals(10, embeded_result.getParent().getNode_id());
+        assertEquals(120, embeded_result.getChildren().get(0).getNode_id());
+        assertEquals(310, embeded_result.getChildren().get(1).getNode_id());
     }
 
 }

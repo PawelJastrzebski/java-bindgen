@@ -1,48 +1,48 @@
-use std::borrow::BorrowMut;
 use crate::{exception::JavaCatchINI, j2r::IntoRustType, r2j::IntoJavaType};
+use std::borrow::BorrowMut;
 
- // Java primary types wrappers
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JByte(pub i8);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JShort(pub i16);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JInt(pub i32);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JLong(pub i64);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JFloat(pub f32);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JDouble(pub f64);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JBoolean(pub bool);
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JChar(pub char);
+// Java primary types wrappers
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JByte(pub i8);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JShort(pub i16);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JInt(pub i32);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JLong(pub i64);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JFloat(pub f32);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JDouble(pub f64);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JBoolean(pub bool);
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JChar(pub char);
 
- #[repr(transparent)]
- #[derive(Default)]
- pub struct JVoid();
+#[repr(transparent)]
+#[derive(Default)]
+pub struct JVoid();
 
 // Getters
 pub trait JObjectGetters<'l> {
     fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'l>) -> crate::JResult<T>
     where
-        T: JTypeInfo,
+        T: JTypeInfo<'l>,
         JValueGen<jni::objects::JObject<'l>>: crate::j2r::IntoRustType<'l, T>;
 }
 
 impl<'local> JObjectGetters<'local> for jni::objects::JObject<'local> {
     fn call_getter<T>(&self, name: &str, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>
     where
-        T: JTypeInfo,
+        T: JTypeInfo<'local>,
         JValueGen<jni::objects::JObject<'local>>: crate::j2r::IntoRustType<'local, T>,
     {
         let ty = T::j_type().to_string();
@@ -53,7 +53,6 @@ impl<'local> JObjectGetters<'local> for jni::objects::JObject<'local> {
         e.into_rust(env)
     }
 }
-
 
 use jni::objects::{JValueGen, JValueOwned};
 
@@ -73,51 +72,51 @@ mod jtypes {
     }
 
     #[allow(dead_code)]
-    impl TypeSignatureBuilder {
-        pub fn new1<V: JTypeInfo>(_: &V) -> Self {
+    impl <'l> TypeSignatureBuilder {
+        pub fn new1<V: JTypeInfo<'l>>(_: &V) -> Self {
             Self {
                 args: vec![V::j_type()],
             }
         }
 
-        pub fn new_noargs1<R: JTypeInfo>(_: &R) -> jni::signature::TypeSignature {
+        pub fn new_noargs1<R: JTypeInfo<'l>>(_: &R) -> jni::signature::TypeSignature {
             jni::signature::TypeSignature {
                 args: vec![],
                 ret: R::j_return_type(),
             }
         }
 
-        pub fn arg1<V: JTypeInfo>(mut self, _: &V) -> Self {
+        pub fn arg1<V: JTypeInfo<'l>>(mut self, _: &V) -> Self {
             self.args.push(V::j_type());
             self
         }
 
-        pub fn ret1<R: JTypeInfo>(self, _: &R) -> jni::signature::TypeSignature {
+        pub fn ret1<R: JTypeInfo<'l>>(self, _: &R) -> jni::signature::TypeSignature {
             jni::signature::TypeSignature {
                 args: self.args,
                 ret: R::j_return_type(),
             }
         }
 
-        pub fn new<V: JTypeInfo>() -> Self {
+        pub fn new<V: JTypeInfo<'l>>() -> Self {
             Self {
                 args: vec![V::j_type()],
             }
         }
 
-        pub fn new_noargs<R: JTypeInfo>() -> jni::signature::TypeSignature {
+        pub fn new_noargs<R: JTypeInfo<'l>>() -> jni::signature::TypeSignature {
             jni::signature::TypeSignature {
                 args: vec![],
                 ret: R::j_return_type(),
             }
         }
 
-        pub fn arg<V: JTypeInfo>(mut self) -> Self {
+        pub fn arg<V: JTypeInfo<'l>>(mut self) -> Self {
             self.args.push(V::j_type());
             self
         }
 
-        pub fn ret<R: JTypeInfo>(self) -> jni::signature::TypeSignature {
+        pub fn ret<R: JTypeInfo<'l>>(self) -> jni::signature::TypeSignature {
             jni::signature::TypeSignature {
                 args: self.args,
                 ret: R::j_return_type(),
@@ -126,12 +125,11 @@ mod jtypes {
     }
 
     #[doc(hidden)]
-    pub fn arg1<V: JTypeInfo>(v: &V) -> TypeSignatureBuilder {
+    pub fn arg1<V: for<'l> JTypeInfo<'l>>(v: &V) -> TypeSignatureBuilder {
         TypeSignatureBuilder::new1(v)
     }
 
-    #[doc(hidden)]
-    pub fn arg<V: JTypeInfo>() -> TypeSignatureBuilder {
+    pub fn arg<V: for<'l> JTypeInfo<'l>>() -> TypeSignatureBuilder {
         TypeSignatureBuilder::new::<V>()
     }
 
@@ -168,7 +166,7 @@ mod jtypes {
     }
 
     // Rust to JavaType Info
-    pub trait JTypeInfo
+    pub trait JTypeInfo<'local>
     where
         Self: Sized,
     {
@@ -177,10 +175,10 @@ mod jtypes {
         fn j_value_type(&self) -> jni::signature::JavaType {
             Self::j_type()
         }
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>>;
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>>;
     }
 
-    impl JTypeInfo for JVoid {
+    impl <'local> JTypeInfo<'local> for JVoid {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Void)
         }
@@ -189,12 +187,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Void)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Void)
         }
     }
 
-    impl JTypeInfo for u8 {
+    impl <'local> JTypeInfo<'local> for u8 {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Byte)
         }
@@ -203,12 +201,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Byte)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Byte(self as i8))
         }
     }
 
-    impl JTypeInfo for i16 {
+    impl <'local> JTypeInfo<'local> for i16 {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Short)
         }
@@ -217,12 +215,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Short)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Short(self))
         }
     }
 
-    impl JTypeInfo for i32 {
+    impl <'local> JTypeInfo<'local> for i32 {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Int)
         }
@@ -231,12 +229,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Int)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Int(self))
         }
     }
 
-    impl JTypeInfo for i64 {
+    impl <'local> JTypeInfo<'local> for i64 {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Long)
         }
@@ -245,12 +243,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Long)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Long(self))
         }
     }
 
-    impl JTypeInfo for f32 {
+    impl <'local> JTypeInfo<'local> for f32 {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Float)
         }
@@ -259,12 +257,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Float)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Float(self))
         }
     }
 
-    impl JTypeInfo for f64 {
+    impl <'local> JTypeInfo<'local> for f64 {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Double)
         }
@@ -273,12 +271,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Double)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Double(self))
         }
     }
 
-    impl JTypeInfo for bool {
+    impl <'local> JTypeInfo<'local> for bool {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Boolean)
         }
@@ -287,12 +285,12 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Boolean)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Bool(self as u8))
         }
     }
 
-    impl JTypeInfo for char {
+    impl <'local> JTypeInfo<'local> for char {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Primitive(jni::signature::Primitive::Char)
         }
@@ -301,14 +299,14 @@ mod jtypes {
             ReturnType::Primitive(jni::signature::Primitive::Char)
         }
 
-        fn into_j_value<'local>(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+        fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             Ok(JValueOwned::Char(self as u16))
         }
     }
 
     // Implementing JTypeInfo for wrapper classes
 
-    impl JTypeInfo for JByte {
+    impl <'local> JTypeInfo<'local> for JByte {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Byte".to_string())
         }
@@ -317,7 +315,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -326,7 +324,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JShort {
+    impl <'local> JTypeInfo<'local> for JShort {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Short".to_string())
         }
@@ -335,7 +333,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -344,7 +342,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JInt {
+    impl <'local> JTypeInfo<'local> for JInt {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Integer".to_string())
         }
@@ -353,7 +351,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -362,7 +360,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JLong {
+    impl <'local> JTypeInfo<'local> for JLong {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Long".to_string())
         }
@@ -371,7 +369,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -380,7 +378,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JFloat {
+    impl <'local> JTypeInfo<'local> for JFloat {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Float".to_string())
         }
@@ -389,7 +387,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -398,7 +396,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JDouble {
+    impl <'local> JTypeInfo<'local> for JDouble {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Double".to_string())
         }
@@ -407,7 +405,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -416,7 +414,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JBoolean {
+    impl <'local> JTypeInfo<'local> for JBoolean {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Boolean".to_string())
         }
@@ -425,7 +423,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -434,7 +432,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for JChar {
+    impl <'local> JTypeInfo<'local> for JChar {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/Character".to_string())
         }
@@ -443,7 +441,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -454,7 +452,7 @@ mod jtypes {
 
     // String
 
-    impl JTypeInfo for String {
+    impl <'local> JTypeInfo<'local> for String {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Object("java/lang/String".to_string())
         }
@@ -463,7 +461,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -474,7 +472,7 @@ mod jtypes {
         }
     }
 
-    impl JTypeInfo for Vec<u8> {
+    impl <'local> JTypeInfo<'local> for Vec<u8> {
         fn j_type() -> jni::signature::JavaType {
             JavaType::Array(Box::new(JavaType::Primitive(
                 jni::signature::Primitive::Byte,
@@ -485,7 +483,7 @@ mod jtypes {
             ReturnType::Object
         }
 
-        fn into_j_value<'local>(
+        fn into_j_value(
             self,
             env: &mut jni::JNIEnv<'local>,
         ) -> JResult<JValueOwned<'local>> {
@@ -630,26 +628,28 @@ mod jtypes {
     }
 }
 
-
 // Java List<T> Support
 
 #[repr(transparent)]
 #[derive(Default)]
 pub struct JList<T>(pub Vec<T>);
 
-impl<'local, T> IntoRustType<'local, JList<T>> for jni::objects::JObject<'local>
+impl<'local, T> JList<T>
 where
     jni::objects::JObject<'local>: IntoRustType<'local, i32> + IntoRustType<'local, T>,
 {
-    fn into_rust(mut self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JList<T>> {
+    fn from_j_object(
+        mut obj: jni::objects::JObject<'local>,
+        env: &mut jni::JNIEnv<'local>,
+    ) -> crate::JResult<Self> {
         let mut items = vec![];
 
-        let size: i32 = self.borrow_mut().call_getter("size", env)?;
+        let size: i32 = obj.borrow_mut().call_getter("size", env)?;
         for i in 0..size {
             let index = i.into_j_value(env)?;
             let e = env
                 .call_method(
-                    &mut self,
+                    &mut obj,
                     "get",
                     format!("(I)Ljava/lang/Object;"),
                     &[index.borrow()],
@@ -665,11 +665,11 @@ where
     }
 }
 
-impl<'local, T> IntoJavaType<'local, jni::objects::JObject<'local>> for JList<T>
+impl<'local, T> JList<T>
 where
     T: IntoJavaType<'local, jni::objects::JObject<'local>>,
 {
-    fn into_java(
+    fn into_j_object(
         self,
         env: &mut jni::JNIEnv<'local>,
     ) -> crate::JResult<jni::objects::JObject<'local>> {
@@ -693,5 +693,55 @@ where
         }
 
         Ok(array_list)
+    }
+}
+
+impl<'local, T> IntoRustType<'local, JList<T>> for jni::objects::JObject<'local>
+where
+    jni::objects::JObject<'local>: IntoRustType<'local, i32> + IntoRustType<'local, T>,
+{
+    fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JList<T>> {
+        JList::from_j_object(self, env)
+    }
+}
+
+impl<'local, T> IntoJavaType<'local, jni::objects::JObject<'local>> for JList<T>
+where
+    T: IntoJavaType<'local, jni::objects::JObject<'local>>,
+{
+    fn into_java(
+        self,
+        env: &mut jni::JNIEnv<'local>,
+    ) -> crate::JResult<jni::objects::JObject<'local>> {
+        self.into_j_object(env)
+    }
+}
+
+impl<'local, T> IntoRustType<'local, JList<T>>
+    for jni::objects::JValueGen<jni::objects::JObject<'local>>
+where
+    jni::objects::JObject<'local>: IntoRustType<'local, i32> + IntoRustType<'local, T>,
+{
+    fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JList<T>> {
+        let obj = self.l()?;
+        JList::from_j_object(obj, env)
+    }
+}
+
+impl<'local, T> JTypeInfo<'local> for JList<T>
+where
+    T: IntoJavaType<'local, jni::objects::JObject<'local>>,
+{
+    fn j_type() -> jni::signature::JavaType {
+        jni::signature::JavaType::Object("java/util/List".to_string())
+    }
+
+    fn j_return_type() -> jni::signature::ReturnType {
+        jni::signature::ReturnType::Object
+    }
+
+    fn into_j_value(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<JValueOwned<'local>> {
+        let obj = self.into_j_object(env)?;
+        Ok(JValueOwned::Object(jni::objects::JObject::from(obj)))
     }
 }

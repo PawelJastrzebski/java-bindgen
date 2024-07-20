@@ -14,7 +14,7 @@ pub mod test_utils;
 pub extern crate java_bindgen_macro as derive;
 
 pub mod prelude {
-    pub use crate::derive::{java_bindgen, test_jvm, IntoJava, IntoRust, JLogger};
+    pub use crate::derive::{java_bindgen, test_jvm, IntoJava, IntoRust, JavaType, JLogger};
     pub use crate::interop::*;
     pub use crate::j2r::*;
     pub use crate::r2j::*;

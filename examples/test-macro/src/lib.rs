@@ -311,6 +311,26 @@ pub mod return_custom_type {
     ) -> JResult<JList<JavaClassWrappers>> {
         Ok(object)
     }
+
+    #[derive(Default, IntoRust, IntoJava, JavaType)]
+    struct EmbededTypes {
+        parent: EmbededNode,
+        children: JList<EmbededNode>,
+    }
+
+    #[derive(Default, IntoRust, IntoJava, JavaType)]
+    struct EmbededNode {
+        node_id: i32,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_embeded(
+        object: EmbededTypes,
+    ) -> JResult<EmbededTypes> {
+        Ok(object)
+    }
+
+
 }
 
 pub mod java_logger {
@@ -385,7 +405,7 @@ pub mod raw_types_order {
 pub mod raw_return_type {
     use java_bindgen::prelude::*;
 
-    #[derive(IntoJava)]
+    #[derive(IntoJava, Default)]
     struct EmptyClass {}
 
     #[java_bindgen(return = EmptyClass)]
