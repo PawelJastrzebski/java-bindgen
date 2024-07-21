@@ -3,8 +3,16 @@ name = "java-bindgen-core"
 version = "0.1.0-alpha.1"
 edition = "2021"
 description = "Java Bindgen | Core"
+repository = "https://github.com/PawelJastrzebski/java-bindgen"
 license = "MIT"
 rust-version = "1.70"
+keywords = ["java", "jni", "bindings", "jar"]
+categories = ["api-bindings"]
+exclude = [
+    "/docs",
+    "/examples",
+    "/target",
+]
 
 [dependencies]
 convert_case = "0.6"

@@ -3,8 +3,16 @@ name = "java-pack"
 version = "0.1.0-alpha.1"
 edition = "2021"
 description = "☕ + 🦀 = ❤️‍🔥 Java JNI Bindings Generator"
+repository = "https://github.com/PawelJastrzebski/java-bindgen"
 license = "MIT"
 rust-version = "1.70"
+keywords = ["java", "jni", "bindings", "jar"]
+categories = ["api-bindings"]
+exclude = [
+    "/docs",
+    "/examples",
+    "/target",
+]
 
 [dependencies]
 java-bindgen-core = {path = "../java-bindgen-core"}

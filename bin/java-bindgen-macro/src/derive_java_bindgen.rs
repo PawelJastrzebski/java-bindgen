@@ -129,6 +129,7 @@ fn produce_fn_java_args_signature(
     }
 }
 
+// Macro attributes
 struct JavaBindgenAttr {
     pub package: String,
     pub returns: Option<String>,
@@ -172,6 +173,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         let rust_fn_name = java_fn.sig.ident.to_string();
         let return_type = produce_rust_result_type(&java_fn.sig.output, &mut errors);
 
+        // Safe FFI Methods
         if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
             let args = produce_java_args(&java_fn.sig.inputs, &mut errors);
             let return_type = attribute
@@ -190,6 +192,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
             });
             store.save();
         }
+
         // Rewrite rust function
         let j_ffi_fn_name = format_ident!("{}", project_info.get_java_method_name(&rust_fn_name));
         let fn_name = java_fn.sig.ident.to_token_stream();
@@ -203,7 +206,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
             into_rust_ident,
         } = produce_fn_java_args_signature(&java_fn.sig.inputs, &mut errors);
 
-        // Types conversion
+        // Input types conversion
         let mut rewrites = quote! {};
         for indent in into_rust_ident {
             rewrites.append_all(quote! {
@@ -215,6 +218,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
             });
         }
 
+        // Return type conversion
         let return_type = rewrite_rust_type_to_jni(&return_type, &jni_env_lifetime, &mut errors)
             .unwrap_or_else(|| {
                 // Return JObject if custom type specified
@@ -239,7 +243,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
                 #rewrites
 
                 let r = #fn_name(#args_names);
-                j_result_handler(r, &mut #env_indent)
+                java_bindgen::exception::j_result_handler(r, &mut #env_indent)
             }
 
         }

@@ -14,9 +14,10 @@ Develop a robust and safe framework that facilitates seamless and secure integra
 ## Features 🎖️
 - Convenient error handling using `JResult<T, JException>` with propagation to the Java layer.
 - Automatic type conversion for Java primitives like `String`, `byte[]`, `int`, `long`, `float`, `boolean`, etc.
-- Custom types with `#[derive(IntoRust, IntoJava)]` for seamless integration.
+- Custom types with `#[derive(JavaClass)]` for seamless integration.
 - Integrated Logger `#[derive(JLogger)]` for better debugging and logging support.
 - Rust error `stack trace` attached to Java Exceptions for improved error diagnostics.
+- Support for Java `java.util.List<E>` with Rust `JList<E>`.
 
 <br />
 <br />
@@ -57,7 +58,7 @@ lib.rs
 ```rust compile_fail
 use java_bindgen::prelude::*;
 
-#[derive(IntoJava, Default)]
+#[derive(Default, JavaClass)]
 struct User {
     name: String,
 }
@@ -173,6 +174,7 @@ output
 ```
 
 #### Exception Handling
+Rust
 ```rust compile_fail
 #[java_bindgen]
 fn raw_object_to_string<'a>(env: &mut JNIEnv<'a>, input: JObject<'a>) -> JResult<String> {
@@ -184,7 +186,7 @@ Java signature:
 ```java
 String raw_object_to_string(Object input)
 ```
-When Java pass non String Object:
+When Java pass non String Object
 ```sh
 java.lang.UnsupportedOperationException:
 Rust Error:  JNI call failed
@@ -201,6 +203,40 @@ Rust Backtrace:
    4: <unknown>
 ```
 
+#### Complex Types
+Rust
+```rust compile_fail
+#[derive(Default, JavaClass)]
+struct Element {
+    parent: Node,
+    children: JList<Node>,
+}
+
+#[derive(Default, JavaClass)]
+struct Node {
+    node_id: i32,
+}
+
+#[java_bindgen]
+fn add_new_node(node: Node, element: Element) -> JResult<Element> {
+    let mut update = element;
+    update.children.add(node);
+    Ok(update)
+}
+```
+Java
+```java
+Node parent = new Node(1);
+Node child = new Node(2);
+Element element = Element.builder().children(new LinkedList<>()).parent(parent).build();
+
+Element updated = Lib.add_new_node(child, element);
+System.out.println("Updated: " + updated);
+```
+output
+```sh
+Updated: Element(parent=Node(node_id=1), children=[Node(node_id=2)])
+```
 <br />
 
 ## Full Examples 🧭

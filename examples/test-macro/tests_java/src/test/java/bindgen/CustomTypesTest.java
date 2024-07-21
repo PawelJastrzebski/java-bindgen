@@ -3,8 +3,13 @@ package bindgen;
 import com.test.macro.*;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,8 +33,7 @@ public class CustomTypesTest {
     public void pass_user_list() {
         List<UserClass> list = Arrays.asList(
                 new UserClass("Java", 2),
-                new UserClass("Rust", 3)
-        );
+                new UserClass("Rust", 3));
         List<UserClass> users = TestMacro.pass_user_list("Hello, ", list);
 
         assertEquals("1Hello, ", users.get(0).getName());
@@ -168,6 +172,30 @@ public class CustomTypesTest {
         assertEquals(10, embeded_result.getParent().getNode_id());
         assertEquals(120, embeded_result.getChildren().get(0).getNode_id());
         assertEquals(310, embeded_result.getChildren().get(1).getNode_id());
+    }
+
+    @Test
+    public void pass_java_class_embeded_multi_thread() throws InterruptedException {
+        List<CompletableFuture<Void>> list = new ArrayList<>();
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        for (int i = 0; i < 10_000; i++) {
+            list.add(CompletableFuture.runAsync(() -> {
+
+                Node parent = new Node(1);
+                Node child = new Node(2);
+                Element element = Element.builder().children(new LinkedList<>()).parent(parent).build();
+
+                Element updated = TestMacro.add_new_node(child, element);
+//                System.out.println("Updated: " + updated);
+
+                assertEquals(1, updated.getChildren().size());
+
+            }, pool));
+        }
+
+        for (CompletableFuture<Void> t : list) {
+            t.join();
+        }
     }
 
 }

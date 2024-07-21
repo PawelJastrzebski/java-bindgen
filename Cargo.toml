@@ -7,6 +7,12 @@ repository = "https://github.com/PawelJastrzebski/java-bindgen"
 license = "MIT"
 rust-version = "1.70"
 keywords = ["java", "jni", "bindings", "jar"]
+categories = ["api-bindings"]
+exclude = [
+    "/docs",
+    "/examples",
+    "/target",
+]
 
 [dependencies]
 jni = { version = "0.21", features = ["invocation"] }

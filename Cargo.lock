@@ -107,15 +107,9 @@ dependencies = [
 name = "java-bindgen-macro"
 version = "0.1.0-alpha.1"
 dependencies = [
- "convert_case",
- "fs2",
  "java-bindgen-core",
  "quote",
- "serde",
- "serde_json",
  "syn",
- "thiserror",
- "toml",
 ]
 
 [[package]]

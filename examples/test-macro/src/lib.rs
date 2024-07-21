@@ -192,6 +192,11 @@ pub mod pass_types {
     }
 
     #[java_bindgen]
+    fn pass_i8(input: i8) -> JResult<i8> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
     fn pass_i16(input: i16) -> JResult<i16> {
         Ok(input)
     }
@@ -312,25 +317,21 @@ pub mod return_custom_type {
         Ok(object)
     }
 
-    #[derive(Default, IntoRust, IntoJava, JavaType)]
+    #[derive(Default, JavaClass)]
     struct EmbededTypes {
         parent: EmbededNode,
         children: JList<EmbededNode>,
     }
 
-    #[derive(Default, IntoRust, IntoJava, JavaType)]
+    #[derive(Default, JavaClass)]
     struct EmbededNode {
         node_id: i32,
     }
 
     #[java_bindgen]
-    fn pass_java_class_embeded(
-        object: EmbededTypes,
-    ) -> JResult<EmbededTypes> {
+    fn pass_java_class_embeded(object: EmbededTypes) -> JResult<EmbededTypes> {
         Ok(object)
     }
-
-
 }
 
 pub mod java_logger {
@@ -560,6 +561,28 @@ pub mod pass_list {
     #[java_bindgen]
     fn pass_list_of_lists(input: JList<JList<i32>>) -> JResult<JList<JList<i32>>> {
         Ok(input)
+    }
+}
+
+pub mod readme_examples {
+    use java_bindgen::prelude::*;
+
+    #[derive(Default, JavaClass)]
+    struct Element {
+        parent: Node,
+        children: JList<Node>,
+    }
+
+    #[derive(Default, JavaClass)]
+    struct Node {
+        node_id: i32,
+    }
+
+    #[java_bindgen]
+    fn add_new_node(node: Node, element: Element) -> JResult<Element> {
+        let mut update = element;
+        update.children.add(node);
+        Ok(update)
     }
 }
 

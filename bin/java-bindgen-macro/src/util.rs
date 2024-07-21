@@ -29,7 +29,9 @@ pub struct CompileErrors {
 
 impl Default for CompileErrors {
     fn default() -> Self {
-        Self { quote: quote! {} }
+        Self {
+            quote: Default::default(),
+        }
     }
 }
 
@@ -39,21 +41,29 @@ impl ToTokens for CompileErrors {
     }
 }
 
+impl From<CompileErrors> for TokenStream {
+    fn from(value: CompileErrors) -> Self {
+        value.quote.into()
+    }
+}
+
 #[allow(dead_code)]
 impl CompileErrors {
     pub fn add(&mut self, message: String) {
-        let message = format!("[java-bindgen]\n{message}\n");
-        self.quote.append_all(quote!( compile_error!(#message); ))
+        let msg = format!("[java-bindgen]\n{message}\n");
+        self.quote.append_all(quote!( compile_error!(#msg); ))
     }
     pub fn add_spaned(&mut self, span: syn::__private::Span, message: String) {
-        let message = format!("[java-bindgen]\n{message}\n");
+        let msg = format!("[java-bindgen]\n{message}\n");
         self.quote
-            .append_all(quote_spanned!( span => compile_error!(#message); ))
+            .append_all(quote_spanned!( span => compile_error!(#msg); ))
     }
 }
 
 pub fn ts2(tokens: &str) -> TokenStream2 {
-    TokenStream2::from_str(tokens).expect("valid TokenStream2")
+    TokenStream2::from_str(tokens).unwrap_or_else(|_| {
+        quote! {/* Error */}
+    })
 }
 
 pub fn parse_project_toml(project_dir: &std::path::Path) -> Result<CargoToml, String> {
@@ -81,9 +91,7 @@ pub fn parse_project_toml(project_dir: &std::path::Path) -> Result<CargoToml, St
 
             Ok(toml_parsed)
         }
-        Err(err) => {
-            Err(err.to_string())
-        }
+        Err(err) => Err(err.to_string()),
     }
 }
 

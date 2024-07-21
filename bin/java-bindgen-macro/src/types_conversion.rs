@@ -40,7 +40,7 @@ pub fn to_java_list(rust_type: String, errors: &mut CompileErrors) -> String {
         return "List<Boolean>".to_string();
     }
 
-    let obj = rewrite_rust_to_java(&ts2(&ty), errors).unwrap_or("Object".to_string());
+    let obj = rewrite_rust_to_java(&ts2(ty), errors).unwrap_or("Object".to_string());
     format!("List<{obj}>")
 }
 
@@ -127,7 +127,7 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     };
 
     // rust primitves
-    if rust_type == "u8" {
+    if rust_type == "u8" || rust_type == "i8" {
         return Some("byte".to_string());
     }
     if rust_type == "i16" {
@@ -210,7 +210,7 @@ pub fn rewrite_rust_type_to_jni(
 
     // primitives
 
-    if rust_type == "jbyte" || rust_type == "u8" {
+    if rust_type == "jbyte" || rust_type == "u8" || rust_type == "i8" {
         return Some(quote! { jni::sys::jbyte });
     };
     if rust_type == "jboolean" || rust_type == "bool" {

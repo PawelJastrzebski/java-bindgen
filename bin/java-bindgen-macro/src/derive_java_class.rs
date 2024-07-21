@@ -6,9 +6,8 @@ use java_bindgen_core::{
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput};
-use syn::__private::TokenStream2;
 
-use crate::util::{self, CompileErrors};
+use crate::util::CompileErrors;
 
 pub fn main(item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<DeriveInput>(item.clone()) {
@@ -22,10 +21,10 @@ pub fn main(item: TokenStream) -> TokenStream {
         };
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(project_dir) {
+        let cargo_toml = match crate::util::parse_project_toml(project_dir) {
             Ok(toml) => toml,
             Err(err) => {
-                return util::error(input.ident.span(), err.to_string()).into();
+                return crate::util::error(input.ident.span(), err.to_string()).into();
             }
         };
 
@@ -45,38 +44,17 @@ pub fn main(item: TokenStream) -> TokenStream {
             store.save();
         }
 
-        return impl_java_type(&project_info, &input, &errors).into();
+        let into_java = crate::dervie_into_java::impl_into_java(&project_info, &input, &fields, &errors);
+        let into_rust = crate::derive_into_rust::impl_into_rust(&input, &fields, &errors);
+        let java_type = crate::dervie_java_type::impl_java_type(&project_info, &input, &errors);
+
+        return quote! {
+            #into_java
+            #into_rust
+            #java_type
+
+        }.into();
     }
 
     TokenStream::default()
-}
-
-pub fn impl_java_type(
-    project_info: &ProjectInfo,
-    input: &DeriveInput,
-    errors: &CompileErrors,
-) -> TokenStream2 {
-    let name = &input.ident;
-    let (_, ty_generics, where_clause) = input.generics.split_for_impl();
-    let class_path = crate::common::class_path(&project_info, name.to_string());
-    quote! {
-
-        #errors
-
-        impl<'local> java_bindgen::interop::JTypeInfo<'local> for #name #ty_generics #where_clause {
-            fn j_type() -> jni::signature::JavaType {
-                jni::signature::JavaType::Object(#class_path.to_string())
-            }
-
-            fn j_return_type() -> jni::signature::ReturnType {
-                jni::signature::ReturnType::Object
-            }
-
-            fn into_j_value(self, env: &mut jni::JNIEnv<'local>) -> java_bindgen::JResult<jni::objects::JValueOwned<'local>> {
-                let obj = self.into_java(env)?;
-                Ok(jni::objects::JValueOwned::Object(obj))
-            }
-        }
-
-    }
 }
