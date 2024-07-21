@@ -50,12 +50,12 @@ pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors)
                         ),
                     );
 
-                    return quote! { #r_type };
+                    return r_type.to_token_stream()
                 }
 
                 if let syn::PathArguments::AngleBracketed(ref arg) = segment.arguments {
-                    let inner_type = arg.args.to_token_stream();
-                    return quote! { #inner_type};
+                    // Inner type
+                    return arg.args.to_token_stream();
                 }
             }
         }
@@ -167,4 +167,14 @@ pub fn produce_java_class_ffi_types(
     }
 
     Some(java_types)
+}
+
+
+pub fn class_path(project_info: &java_bindgen_core::project_info::ProjectInfo, class_name: String) -> TokenStream2 {
+    use std::str::FromStr;
+
+    let mut class_path = project_info.get_packages_path();
+    class_path.push(class_name);
+    let class_path = class_path.join("/");
+    TokenStream2::from_str(&format!("\"{class_path}\"")).unwrap_or(quote! {})
 }

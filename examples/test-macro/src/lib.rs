@@ -192,6 +192,11 @@ pub mod pass_types {
     }
 
     #[java_bindgen]
+    fn pass_i8(input: i8) -> JResult<i8> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
     fn pass_i16(input: i16) -> JResult<i16> {
         Ok(input)
     }
@@ -252,6 +257,18 @@ pub mod return_custom_type {
         })
     }
 
+    #[java_bindgen]
+    fn pass_user_list(name: String, user: JList<UserClass>) -> JResult<JList<UserClass>> {
+        let mut users = user;
+        let mut vec = vec![UserClass {
+            age: 10,
+            name: format!("1{}", name),
+        }];
+        vec.append(&mut users.0);
+
+        Ok(JList(vec))
+    }
+
     #[derive(Default, IntoJava, IntoRust)]
     struct AllJavaTypes {
         java_b: u8,
@@ -271,6 +288,11 @@ pub mod return_custom_type {
         Ok(object)
     }
 
+    #[java_bindgen]
+    fn pass_all_types_list(object: JList<AllJavaTypes>) -> JResult<JList<AllJavaTypes>> {
+        Ok(object)
+    }
+
     #[derive(Default, IntoJava, IntoRust)]
     struct JavaClassWrappers {
         java_b: JByte,
@@ -285,6 +307,29 @@ pub mod return_custom_type {
 
     #[java_bindgen]
     fn pass_java_class_wrappers(object: JavaClassWrappers) -> JResult<JavaClassWrappers> {
+        Ok(object)
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_wrappers_list(
+        object: JList<JavaClassWrappers>,
+    ) -> JResult<JList<JavaClassWrappers>> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct EmbededTypes {
+        parent: EmbededNode,
+        children: JList<EmbededNode>,
+    }
+
+    #[derive(Default, JavaClass)]
+    struct EmbededNode {
+        node_id: i32,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_embeded(object: EmbededTypes) -> JResult<EmbededTypes> {
         Ok(object)
     }
 }
@@ -361,7 +406,7 @@ pub mod raw_types_order {
 pub mod raw_return_type {
     use java_bindgen::prelude::*;
 
-    #[derive(IntoJava)]
+    #[derive(IntoJava, Default)]
     struct EmptyClass {}
 
     #[java_bindgen(return = EmptyClass)]
@@ -406,6 +451,12 @@ pub mod raw_input_type {
         let bytes: Vec<u8> = input.into_rust(env)?;
         Ok(bytes)
     }
+
+    #[java_bindgen]
+    fn raw_input_type_4<'a>(env: &mut JNIEnv<'a>, input: JObject<'a>) -> JResult<JList<JLong>> {
+        let list: JList<JLong> = input.into_rust(env)?;
+        Ok(list)
+    }
 }
 
 pub mod throw_exception {
@@ -446,6 +497,92 @@ pub mod throw_exception {
     fn should_throw_exception_in_order<'a>(env: &mut JNIEnv<'a>, _nr: i32) -> JResult<i32> {
         env.j_throw(JExceptionClass::IndexOutOfBoundsException);
         Err(JExceptionClass::UnsupportedOperationException.into())
+    }
+}
+
+pub mod pass_list {
+    use java_bindgen::prelude::*;
+
+    #[java_bindgen]
+    fn pass_list_u8(input: JList<u8>) -> JResult<JList<u8>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_i8(input: JList<i8>) -> JResult<JList<i8>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_i16(input: JList<i16>) -> JResult<JList<i16>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_i32(input: JList<i32>) -> JResult<JList<i32>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_i64(input: JList<i64>) -> JResult<JList<i64>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_f32(input: JList<f32>) -> JResult<JList<f32>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_f64(input: JList<f64>) -> JResult<JList<f64>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_char(input: JList<char>) -> JResult<JList<char>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_bool(input: JList<bool>) -> JResult<JList<bool>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_string(input: JList<String>) -> JResult<JList<String>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_byte_array(input: JList<Vec<u8>>) -> JResult<JList<Vec<u8>>> {
+        Ok(input)
+    }
+
+    #[java_bindgen]
+    fn pass_list_of_lists(input: JList<JList<i32>>) -> JResult<JList<JList<i32>>> {
+        Ok(input)
+    }
+}
+
+pub mod readme_examples {
+    use java_bindgen::prelude::*;
+
+    #[derive(Default, JavaClass)]
+    struct Element {
+        parent: Node,
+        children: JList<Node>,
+    }
+
+    #[derive(Default, JavaClass)]
+    struct Node {
+        node_id: i32,
+    }
+
+    #[java_bindgen]
+    fn add_new_node(node: Node, element: Element) -> JResult<Element> {
+        let mut update = element;
+        update.children.add(node);
+        Ok(update)
     }
 }
 

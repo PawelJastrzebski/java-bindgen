@@ -1,9 +1,51 @@
-use crate::util::CompileErrors;
+use crate::util::{ts2, CompileErrors};
 use quote::quote;
 use syn::__private::TokenStream2;
 
+// Extract T from JList<T>
+pub fn to_java_list(rust_type: String, errors: &mut CompileErrors) -> String {
+    let default = "List<Object>".to_string();
+    let Some(split_index) = rust_type.find('<') else {
+        return default;
+    };
+    let (_, right) = rust_type.split_at(split_index + 1);
+
+    let Some(split_index) = right.rfind('>') else {
+        return default;
+    };
+    let (ty, _) = right.split_at(split_index);
+
+    if ty == "u8" || ty == "i8" {
+        return "List<Byte>".to_string();
+    }
+    if ty == "i16" {
+        return "List<Short>".to_string();
+    }
+    if ty == "i32" {
+        return "List<Integer>".to_string();
+    }
+    if ty == "i64" {
+        return "List<Long>".to_string();
+    }
+    if ty == "f32" {
+        return "List<Float>".to_string();
+    }
+    if ty == "f64" {
+        return "List<Double>".to_string();
+    }
+    if ty == "char" {
+        return "List<Character>".to_string();
+    }
+    if ty == "bool" {
+        return "List<Boolean>".to_string();
+    }
+
+    let obj = rewrite_rust_to_java(&ts2(ty), errors).unwrap_or("Object".to_string());
+    format!("List<{obj}>")
+}
+
 // rewrite [Rust] to [Java Type]
-pub fn rewrite_rust_to_java(ty: &TokenStream2, _errors: &mut CompileErrors) -> Option<String> {
+pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Option<String> {
     let rust_type = ty.to_string().replace(' ', "");
 
     // ignored types
@@ -12,6 +54,10 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, _errors: &mut CompileErrors) -> O
     };
     if rust_type.contains("JClass") {
         return None;
+    };
+
+    if rust_type.contains("JList<") {
+        return Some(to_java_list(rust_type, errors));
     };
 
     // void
@@ -81,7 +127,7 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, _errors: &mut CompileErrors) -> O
     };
 
     // rust primitves
-    if rust_type == "u8" {
+    if rust_type == "u8" || rust_type == "i8" {
         return Some("byte".to_string());
     }
     if rust_type == "i16" {
@@ -104,6 +150,9 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, _errors: &mut CompileErrors) -> O
     }
     if rust_type == "char" {
         return Some("char".to_string());
+    } 
+    if rust_type == "Vec<u8>" {
+        return Some("byte[]".to_string());
     }
 
     // objects
@@ -161,7 +210,7 @@ pub fn rewrite_rust_type_to_jni(
 
     // primitives
 
-    if rust_type == "jbyte" || rust_type == "u8" {
+    if rust_type == "jbyte" || rust_type == "u8" || rust_type == "i8" {
         return Some(quote! { jni::sys::jbyte });
     };
     if rust_type == "jboolean" || rust_type == "bool" {

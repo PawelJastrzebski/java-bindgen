@@ -1,6 +1,7 @@
 package [[package_name]];
 
 import lombok.*;
+import java.util.List;
 
 @Data
 @Builder

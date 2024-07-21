@@ -210,31 +210,52 @@ public class PrimitivesTest {
     @Test
     public void pass_u8() {
         assertEquals((byte) 8, TestMacro.pass_u8((byte) 8));
+        assertEquals((byte) -8, TestMacro.pass_u8((byte) -8));
+        assertEquals(Byte.MAX_VALUE, TestMacro.pass_u8(Byte.MAX_VALUE));
+        assertEquals(Byte.MIN_VALUE, TestMacro.pass_u8(Byte.MIN_VALUE));
+    }
+
+    @Test
+    public void pass_i8() {
+        assertEquals((byte) 9, TestMacro.pass_i8((byte) 9));
+        assertEquals((byte) -9, TestMacro.pass_i8((byte) -9));
+        assertEquals(Byte.MAX_VALUE, TestMacro.pass_i8(Byte.MAX_VALUE));
+        assertEquals(Byte.MIN_VALUE, TestMacro.pass_i8(Byte.MIN_VALUE));
     }
 
     @Test
     public void pass_i16() {
         assertEquals(16, TestMacro.pass_i16((short) 16));
+        assertEquals(Short.MAX_VALUE, TestMacro.pass_i16(Short.MAX_VALUE));
+        assertEquals(Short.MIN_VALUE, TestMacro.pass_i16(Short.MIN_VALUE));
     }
 
     @Test
     public void pass_i32() {
         assertEquals(32, TestMacro.pass_i32(32));
+        assertEquals(Short.MAX_VALUE, TestMacro.pass_i32(Short.MAX_VALUE));
+        assertEquals(Short.MIN_VALUE, TestMacro.pass_i32(Short.MIN_VALUE));
     }
 
     @Test
     public void pass_i64() {
         assertEquals(64L, TestMacro.pass_i64(64L));
+        assertEquals(Long.MAX_VALUE, TestMacro.pass_i64(Long.MAX_VALUE));
+        assertEquals(Long.MIN_VALUE, TestMacro.pass_i64(Long.MIN_VALUE));
     }
 
     @Test
     public void pass_f32() {
         assertEquals(32.0f, TestMacro.pass_f32(32.0f));
+        assertEquals(Float.MAX_VALUE, TestMacro.pass_f32(Float.MAX_VALUE));
+        assertEquals(Float.MIN_VALUE, TestMacro.pass_f32(Float.MIN_VALUE));
     }
 
     @Test
     public void pass_f64() {
         assertEquals(64.0, TestMacro.pass_f64(64.0));
+        assertEquals(Double.MAX_VALUE, TestMacro.pass_f64(Double.MAX_VALUE));
+        assertEquals(Double.MIN_VALUE, TestMacro.pass_f64(Double.MIN_VALUE));
     }
 
     @Test
@@ -244,7 +265,8 @@ public class PrimitivesTest {
 
     @Test
     public void pass_byte_array() {
-        assertArrayEquals(new byte[] { 1, 2, 3 }, TestMacro.pass_byte_array(new byte[] { 1, 2, 3 }));
+        byte[] input = new byte[] { 1, 2, -3, Byte.MAX_VALUE, Byte.MIN_VALUE};
+        assertArrayEquals(input, TestMacro.pass_byte_array(input));
     }
 
 }

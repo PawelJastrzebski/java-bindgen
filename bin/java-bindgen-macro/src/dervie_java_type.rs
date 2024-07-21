@@ -4,14 +4,11 @@ use java_bindgen_core::{
     project_info::ProjectInfo,
 };
 use proc_macro::TokenStream;
-use quote::{format_ident, quote, ToTokens, TokenStreamExt};
+use quote::quote;
 use syn::{Data, DeriveInput};
 use syn::__private::TokenStream2;
 
-use crate::{
-    common,
-    util::{self, CompileErrors},
-};
+use crate::util::{self, CompileErrors};
 
 pub fn main(item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<DeriveInput>(item.clone()) {
@@ -48,60 +45,36 @@ pub fn main(item: TokenStream) -> TokenStream {
             store.save();
         }
 
-        return impl_into_java(&project_info, &input, &fields, &errors).into();
+        return impl_java_type(&project_info, &input, &errors).into();
     }
 
     TokenStream::default()
 }
 
-pub fn impl_into_java(
+pub fn impl_java_type(
     project_info: &ProjectInfo,
     input: &DeriveInput,
-    fields: &Vec<(syn::Ident, syn::Type)>,
     errors: &CompileErrors,
 ) -> TokenStream2 {
     let name = &input.ident;
-
-    // rust to java type covertion
-    let mut type_signature = quote! {};
-    let mut args_conversion = quote! {};
-    let mut args_list = quote! {};
-    for (i, (name, ty)) in fields.into_iter().enumerate() {
-        let arg_name = format_ident!("a{i}");
-
-        // ',' sepparated Types
-        if !type_signature.is_empty() {
-            type_signature.append_all(quote! {, })
-        }
-        type_signature.append_all(ty.to_token_stream());
-
-        // Type convertions
-        args_conversion.append_all(quote! {
-            let #arg_name = self.#name.into_j_value(env)?;
-        });
-
-        // ',' sepparated Args names
-        if !args_list.is_empty() {
-            args_list.append_all(quote! {, })
-        }
-        args_list.append_all(quote! {#arg_name.borrow()});
-    }
-
-    let class_path = common::class_path(&project_info, name.to_string());
     let (_, ty_generics, where_clause) = input.generics.split_for_impl();
-
+    let class_path = crate::common::class_path(&project_info, name.to_string());
     quote! {
 
         #errors
 
-        impl <'local> java_bindgen::r2j::IntoJavaType<'local, jni::objects::JObject<'local>> for #name #ty_generics #where_clause {
-            fn into_java(self, env: &mut jni::JNIEnv<'local>) -> java_bindgen::JResult<jni::objects::JObject<'local>> {
-                let sig = signature_by_type!(#type_signature => JVoid);
+        impl<'local> java_bindgen::interop::JTypeInfo<'local> for #name #ty_generics #where_clause {
+            fn j_type() -> jni::signature::JavaType {
+                jni::signature::JavaType::Object(#class_path.to_string())
+            }
 
-                #args_conversion
+            fn j_return_type() -> jni::signature::ReturnType {
+                jni::signature::ReturnType::Object
+            }
 
-                let class = env.find_class(#class_path).j_catch(env)?;
-                env.new_object(class, sig.to_string(), &[#args_list]).j_catch(env)
+            fn into_j_value(self, env: &mut jni::JNIEnv<'local>) -> java_bindgen::JResult<jni::objects::JValueOwned<'local>> {
+                let obj = self.into_java(env)?;
+                Ok(jni::objects::JValueOwned::Object(obj))
             }
         }
 
