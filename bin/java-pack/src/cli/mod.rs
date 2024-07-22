@@ -37,7 +37,7 @@ pub fn cli() -> color_eyre::Result<()> {
         ))
         .subcommand(Command::new("info").alias("i").about("Check project setup"))
         .subcommand(Command::new("build").alias("b").about("Build jar"))
-        .subcommand(Command::new("jar").alias("j").about("Run jar"))
+        .subcommand(Command::new("jar").alias("j").alias("run").about("Run jar"))
         .subcommand(Command::new("test").alias("t").about("Run tests"))
         .subcommand(
             Command::new("clean")
@@ -49,6 +49,7 @@ pub fn cli() -> color_eyre::Result<()> {
         .subcommand(
             Command::new("new-test")
                 .alias("t")
+                .alias("test-new")
                 .about("Create Java test project"),
         );
 

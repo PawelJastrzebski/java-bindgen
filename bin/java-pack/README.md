@@ -22,10 +22,21 @@ Develop a robust and safe framework that facilitates seamless and secure integra
 <br />
 <br />
 
+## Prerequisites
+Install Rust and Cargo:
+- [Linux/MacOS/Unix](https://www.rust-lang.org/tools/install)
+- [Windows](https://forge.rust-lang.org/infra/other-installation-methods.html#other-ways-to-install-rustup)
+
+<br />
+
 ## Rust Project Setup 🦀
 Install `java-pack` CLI 🛠️
 ```sh
-cargo install java-pack
+cargo install java-pack --version <version>
+```
+Example:
+```sh
+cargo install java-pack --version 0.1.0-alpha.1
 ```
 Add  `java-bindgen` dependency
 ```sh
