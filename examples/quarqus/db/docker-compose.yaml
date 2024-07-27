@@ -1,0 +1,25 @@
+services:
+    db_image_processing_quarkus:
+        image: postgres:14.12
+        container_name: db_image_processing_quarkus
+        ports:
+            - "5490:5432"
+        volumes:
+            - ./db_volume:/var/lib/postgresql/data:rw
+        environment:
+            POSTGRES_PASSWORD: "${ROOT_PASS}"
+            POSTGRES_USER: "${ROOT_USER}"
+            POSTGRES_DB: "img-processing-quarkus"
+        deploy:
+            mode: replicated
+            replicas: 1
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 2048M
+                reservations:
+                    cpus: '0.20'
+                    memory: 500M
+        restart: unless-stopped
+
+

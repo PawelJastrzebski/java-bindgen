@@ -1,0 +1,10 @@
+[package]
+name = "img-processing-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+java-bindgen = "0.1.0-alpha.1"
+
+[package.java-bindgen.metadata]
+package = "java.rs.img_processing"
