@@ -8,7 +8,9 @@ import { NextUIProvider } from "@nextui-org/react";
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <NextUIProvider>
     <React.StrictMode>
-      <App />
+      <main className="dark text-foreground bg-background">
+        <App />
+      </main>
     </React.StrictMode>
   </NextUIProvider>
 )
