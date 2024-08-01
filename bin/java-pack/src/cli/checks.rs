@@ -3,7 +3,7 @@ use std::path::Path;
 use java_bindgen_core::cargo_parser::{parse_toml, CargoTomlFile, JavaBindgen, Lib};
 
 use super::cli_utils::{
-    self, flabel, header, icon, print_option, ready_info, COLOR_GREEN, COLOR_RED,
+    self, f_label, header, icon, print_option, ready_info, COLOR_GREEN, COLOR_RED,
 };
 
 pub struct SystemSetupStatus {
@@ -134,9 +134,9 @@ impl CargoSetupStatus {
     }
 
     pub fn pretty_print(&self) {
-        let cargo_label = flabel("Cargo.toml");
-        let lib_label = flabel("[lib]");
-        let bindgen_label = flabel("[java-bindgen]");
+        let cargo_label = f_label("Cargo.toml");
+        let lib_label = f_label("[lib]");
+        let bindgen_label = f_label("[java-bindgen]");
         if !self.cargo_toml_present {
             println!(
                 "{} {cargo_label}{}",
@@ -198,13 +198,13 @@ impl CheckResult {
     pub fn print_status(&self) {
         println!("{}", header("System"));
         self.system.pretty_print();
-        println!("{}    {}", flabel(""), self.system.get_status());
+        println!("{}    {}", f_label(""), self.system.get_status());
 
         println!();
 
         println!("{}", header("Rust Project"));
         self.cargo.pretty_print();
-        println!("{}    {}", flabel(""), self.cargo.get_status());
+        println!("{}    {}", f_label(""), self.cargo.get_status());
         println!();
     }
 }

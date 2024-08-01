@@ -6,6 +6,7 @@ mod resize;
 mod contrast;
 
 pub fn extract_args(def: &str, prefix: &str, args_size: usize) -> Option<Vec<String>> {
+    let def = def.trim();
     if !def.starts_with(prefix) {
         return None;
     }
@@ -16,7 +17,7 @@ pub fn extract_args(def: &str, prefix: &str, args_size: usize) -> Option<Vec<Str
 
     let args: Vec<&str> = args.split(",").collect();
     if args.len() == args_size {
-        Some(args.into_iter().map(ToString::to_string).collect())
+        Some(args.into_iter().map(|v| v.trim()).map(ToString::to_string).collect())
     } else {
         None
     }

@@ -27,6 +27,10 @@ impl CargoToml {
                 .get("package")
                 .and_then(|v| v.as_str())
                 .map(|v| v.to_string()),
+            local_mvn_repository: metadata
+                .get("local_mvn_repository")
+                .and_then(|v| v.as_str())
+                .map(|v| v.to_string())
         })
     }
 }
@@ -48,6 +52,7 @@ pub struct Lib {
 #[derive(Deserialize, Debug, Default, Clone)]
 pub struct JavaBindgen {
     pub package: Option<String>,
+    pub local_mvn_repository: Option<String>,
 }
 
 #[derive(thiserror::Error, Debug)]

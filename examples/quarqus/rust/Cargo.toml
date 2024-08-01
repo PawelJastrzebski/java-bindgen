@@ -13,3 +13,4 @@ java-bindgen = { path = "../../../"}
 
 [package.java-bindgen.metadata]
 package = "image.rs"
+local_mvn_repository = "../local-maven-repo/"

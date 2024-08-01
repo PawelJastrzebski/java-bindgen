@@ -29,13 +29,18 @@
         overflow-x: hidden;
     }
 
+    .tab[data-slot="panel"] {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
 }
 
 #image-transforms {
     display: flex;
     gap: 20px;
 
-    .card {
+    .app-panel {
         flex: 1;
     }
 }

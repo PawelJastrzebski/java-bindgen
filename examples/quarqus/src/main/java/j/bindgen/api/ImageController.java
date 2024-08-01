@@ -26,15 +26,15 @@ public class ImageController {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
     public Response process(@Valid ImageProcess dto) {
-        logger.info("data.image: " + dto.image.length);
-        logger.info("data.imageExtension: " + dto.imageExtension);
-        logger.info("data.transforms: " + dto.transforms);
-
         ImageInput img = ImageInput.builder().image(dto.image).ext(dto.imageExtension).build();
-        List<String> transforms = Arrays.stream(dto.transforms.split(",")).toList();
+        List<String> transforms = Arrays.stream(dto.transforms.split(";")).toList();
         TransformResult result = ImgProcessingRust.processImage(img, transforms);
 
-        logger.info("done: " + result.getImage().length);
+        logger.info("data.image: " + dto.image.length);
+        logger.info("data.imageExtension: " + dto.imageExtension);
+        logger.info("data.transforms: " + transforms);
+
+        logger.info("done: " + result.getImage().length + " transforms: " + result.getAppliedTransforms());
         return Response.ok(result.getImage())
                 .header("content-type", "image/" + result.getExt())
                 .header("content-disposition", "attachment; filename=image." + result.getExt())

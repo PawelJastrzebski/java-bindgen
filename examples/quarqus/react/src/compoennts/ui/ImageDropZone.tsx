@@ -1,23 +1,45 @@
 import "./ImageDropzone.scss"
 import { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
+import Panel from "./Panel"
+
+export const readBlob: (blob: File | Blob) => Promise<string> = (blob) => {
+    return new Promise<string>((res, rej) => {
+        var reader = new FileReader();
+        reader.onload = () => {
+            res(reader.result as string)
+        };
+        reader.onabort = rej
+        reader.onerror = rej
+        reader.readAsDataURL(blob);
+    })
+}
+
+export let SELECTED_FILE: File | null = null;
+export let SELECTED_FILE_URL: string | null = null;
 
 export default function ImageDropZone({ onSelect }: { onSelect: (file: File | null) => void }) {
-    const [img, setImg] = useState(null as File | null)
-    const [imgUrl, setImgUrl] = useState(null as string | null)
+    const [img, setImg] = useState(SELECTED_FILE)
+    const [imgUrl, setImgUrl] = useState(SELECTED_FILE_URL)
 
     useEffect(() => {
         if (!img) {
             setImgUrl(null);
-            onSelect(img)
+            onSelect(null)
             return;
         }
-        var reader = new FileReader();
-        reader.onload = () => {
-            setImgUrl(reader.result as string)
+
+        if (img == SELECTED_FILE) {
+            return;
+        }
+
+        readBlob(img).then((url) => {
+            setImgUrl(url)
             onSelect(img)
-        };
-        reader.readAsDataURL(img as File);
+            SELECTED_FILE = img;
+            SELECTED_FILE_URL = url
+        })
+
     }, [img])
 
     const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -30,7 +52,8 @@ export default function ImageDropZone({ onSelect }: { onSelect: (file: File | nu
 
     let hint = img == null ? <p>Drag 'n' drop some images here, or click to select files</p> : <></>
     return (
-        <div id="image-drop-zone" {...getRootProps()}>
+
+        <Panel id="image-drop-zone" {...getRootProps()}>
             <input {...getInputProps()} />
             <div className="overlay">
                 {
@@ -40,7 +63,7 @@ export default function ImageDropZone({ onSelect }: { onSelect: (file: File | nu
                 }
             </div>
             <img src={imgUrl ?? ""} />
+        </Panel>
 
-        </div>
     )
 }

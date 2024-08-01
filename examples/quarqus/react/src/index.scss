@@ -16,3 +16,8 @@ html, body, #root, #root > div, main {
   max-width: unset;
   text-align: center;
 }
+
+img {
+  max-height: 60vh;
+  margin: auto;
+}
