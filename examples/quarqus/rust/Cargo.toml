@@ -3,8 +3,13 @@ name = "img-processing-rust"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
-java-bindgen = "0.1.0-alpha.1"
+image = "0.25.1"
+imageproc = "0.25.0"
+java-bindgen = { path = "../../../"}
 
 [package.java-bindgen.metadata]
-package = "java.rs.img_processing"
+package = "image.rs"

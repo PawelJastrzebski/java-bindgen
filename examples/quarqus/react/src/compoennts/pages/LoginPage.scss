@@ -9,8 +9,8 @@
         width: 440px;
         height: 100%;
         padding: 15px;
-        background-color: rgba(15, 15, 15, 0.8);
-        border-radius: 10px;
+        background-color: var(--panel-color);
+        border-radius: var(--panel-radius);
 
         .app-logo {
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -24,7 +24,18 @@
 
     .app-body {
         height: 100%;
-        padding: 0px 20px;
+        padding: 0 0 0 20px;
+        overflow: auto;
+        overflow-x: hidden;
     }
 
+}
+
+#image-transforms {
+    display: flex;
+    gap: 20px;
+
+    .card {
+        flex: 1;
+    }
 }

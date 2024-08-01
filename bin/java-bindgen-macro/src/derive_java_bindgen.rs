@@ -237,7 +237,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
             #source
 
             #[no_mangle]
-            #[allow(unused_mut, non_snake_case)]
+            #[allow(unused_mut, non_snake_case, unused_variables)]
             pub extern "system" fn #j_ffi_fn_name #jni_env_lifetime(#args) -> #return_type {
 
                 #rewrites

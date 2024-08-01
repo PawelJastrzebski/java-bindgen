@@ -1,0 +1,33 @@
+#image-drop-zone {
+    background-color: var(--panel-color);
+    border-radius: var(--panel-radius);
+    padding: 20px;
+    position: relative;
+
+    p {
+        height: 100%;
+        display: block;
+        padding: 5px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        &.drop-hint {
+            background-color: #0000005b;
+        }
+    }
+
+    .overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        z-index: 100;
+    }
+
+    img {
+        max-height: 60vh;
+        margin: auto;
+    }
+}
