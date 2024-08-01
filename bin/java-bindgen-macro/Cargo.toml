@@ -1,6 +1,6 @@
 [package]
 name = "java-bindgen-macro"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 description = "Java Bindgen | Macro"
 repository = "https://github.com/PawelJastrzebski/java-bindgen"

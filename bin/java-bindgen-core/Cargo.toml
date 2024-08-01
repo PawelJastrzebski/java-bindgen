@@ -1,6 +1,6 @@
 [package]
 name = "java-bindgen-core"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 edition = "2021"
 description = "Java Bindgen | Core"
 repository = "https://github.com/PawelJastrzebski/java-bindgen"
