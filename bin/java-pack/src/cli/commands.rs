@@ -3,7 +3,7 @@ use java_bindgen_core::{
     cargo_parser::parse_toml, consts, project_info::ProjectInfo, utils::create_or_get_dir,
 };
 use std::path::{Path, PathBuf};
-
+use crate::cli::cli_utils::exit;
 use super::{
     cli_utils::{self, header},
     java_build_project, java_test_project,
@@ -65,14 +65,14 @@ pub(crate) fn run_jar(project_dir: &Path, release_mode: bool) -> color_eyre::Res
 
     let (_, jar) = get_jar_path(project_dir, &project_info);
     if jar.is_none() {
-        println!("{}", header("Jar not extist"));
+        println!("{}", header("Jar Not Exist"));
         println!("Building new jar..\n");
         build(project_dir, release_mode)?;
     }
 
     let (jar_name, jar) = get_jar_path(project_dir, &project_info);
     if jar.is_none() {
-        bail!("Jar not exist")
+        bail!("Jar Not Exist")
     }
 
     let command = format!("java -jar ./{jar_name}");
@@ -106,17 +106,56 @@ pub(crate) fn run_tests(project_dir: &Path, release_mode: bool) -> color_eyre::R
     // Install Jar
     let (_, jar) = get_jar_path(project_dir, &project_info);
     if jar.is_none() {
-        println!("{}", header("Jar not extist"));
+        println!("{}", header("Jar Not Exist"));
         println!("Building new jar..\n");
         build(project_dir, release_mode)?;
     }
 
     let (_, jar) = get_jar_path(project_dir, &project_info);
     let Some(jar) = jar else {
-        bail!("Jar not exist")
+        bail!("Jar Not Exist")
     };
 
-    java_test_project::install_jar(project_dir, &jar, &project_info)?;
+    let test_dir = project_dir.join(project_info.tests_java_dir_name());
+    if !test_dir.exists() {
+        return Ok(());
+    }
+
+    java_test_project::install_jar(&test_dir, &jar, &project_info, "./local-maven-repo/")?;
     java_test_project::runt_tests(project_dir, &project_info)?;
     Ok(())
 }
+
+pub fn deploy_local(project_dir: &Path, release_mode: bool) -> color_eyre::Result<()> {
+    let toml_path = consts::cargo_toml_path(project_dir);
+    let toml = parse_toml(&toml_path)?.toml_parsed;
+    let project_info = ProjectInfo::from(&toml);
+
+    let Some(local_mvn_repo_dir) = toml.java_bindgen().unwrap_or_default().local_mvn_repository else {
+        println!("{}", header("Invalid Configuration"));
+        println!("Setup `local_mvn_repository` in [package.metadata.java-bindgen].");
+        println!();
+        println!("Example:");
+        println!("[package.metadata.java-bindgen]");
+        println!(r#"package = "{}""#, project_info.java_package_name);
+        println!(r#"local_mvn_repository = "../local-maven-repo/" "#, );
+        println!();
+        return exit();
+    };
+
+    // Build prod
+    build(project_dir, release_mode)?;
+
+    let (_, jar) = get_jar_path(project_dir, &project_info);
+    let Some(jar) = jar else {
+        bail!("Jar not exist")
+    };
+
+    let local_mvn_repo_dir = create_or_get_dir(Path::new(&local_mvn_repo_dir))?;
+
+    // Deploy jar to local repository
+    java_test_project::install_jar(project_dir, &jar, &project_info, &local_mvn_repo_dir.to_string_lossy())?;
+
+    Ok(())
+}
+

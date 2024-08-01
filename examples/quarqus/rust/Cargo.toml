@@ -1,0 +1,16 @@
+[package]
+name = "img-processing-rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+image = "0.25.1"
+imageproc = "0.25.0"
+java-bindgen = { path = "../../../"}
+
+[package.metadata.java-bindgen]
+package = "image.rs"
+local_mvn_repository = "../local-maven-repo/"

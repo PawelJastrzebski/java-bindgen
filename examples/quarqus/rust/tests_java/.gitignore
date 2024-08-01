@@ -1,0 +1,6 @@
+/local-maven-repo
+/target
+.idea
+bindgen.iml
+
+test_results/**

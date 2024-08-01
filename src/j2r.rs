@@ -166,7 +166,7 @@ impl<'local> IntoRustType<'local, Vec<u8>> for jni::objects::JValueGen<JObject<'
     }
 }
 
-// JvaluGen to class primitive
+// JValueGen to class primitive
 
 macro_rules! JValueGen_obj_to_class_primitive_impl {
     ($rust_type:tt) => {
@@ -191,7 +191,7 @@ JValueGen_obj_to_class_primitive_impl!(JDouble);
 JValueGen_obj_to_class_primitive_impl!(JBoolean);
 JValueGen_obj_to_class_primitive_impl!(JChar);
 
-// JObject to calss primitive
+// JObject to class primitive
 
 macro_rules! obj_to_class_primitive_impl {
     ($rust_type:tt) => {

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 java-bindgen = { path = "../../"}
 
-[package.java-bindgen.metadata]
+[package.metadata.java-bindgen]
 package = "com.test.macro"
 
 [lib]

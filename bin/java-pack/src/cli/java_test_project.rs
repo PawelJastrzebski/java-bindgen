@@ -50,8 +50,8 @@ pub fn setup_tests_java_project(
         &test_dir,
         ".gitignore",
         &process_template(JAVA_TEST_GIT_IGNORE, project_info),
-    )?;    
-    
+    )?;
+
     // Create pom
     create_file(
         &resources,
@@ -70,31 +70,29 @@ pub fn setup_tests_java_project(
 }
 
 pub fn install_jar(
-    project_dir: &Path,
+    exec_in: &Path,
     jar_path: &Path,
     project_info: &ProjectInfo,
+    mvn_repo_dir: &str,
 ) -> color_eyre::Result<()> {
-    let test_dir = project_dir.join(project_info.tests_java_dir_name());
-    if !test_dir.exists() {
-        return Ok(())
-    }
+
 
     let jar_path = jar_path.to_string_lossy().to_string();
     let group_id = &project_info.java_package_name;
     let artefact_id = &project_info.lib_name;
-    let varsion = &project_info.lib_version;
+    let version = &project_info.lib_version;
     let command = format!(
         "mvn deploy:deploy-file 
     -Dfile={jar_path}  
     -DgroupId={group_id} 
     -DartifactId={artefact_id} 
-    -Dversion={varsion} 
+    -Dversion={version}
     -DrepositoryId=local-maven-repo 
-    -Durl=file:./local-maven-repo/ 
+    -Durl=file:{mvn_repo_dir}
     -DupdateReleaseInfo=true"
     );
 
-    cli_utils::exec_command(&test_dir, &command, "Install Jar")?;
+    cli_utils::exec_command(&exec_in, &command, "Install Jar")?;
 
     Ok(())
 }
@@ -106,7 +104,7 @@ pub fn runt_tests(
 ) -> color_eyre::Result<()> {
     let test_dir = project_dir.join(project_info.tests_java_dir_name());
     if !test_dir.exists() {
-        return Ok(())
+        return Ok(());
     }
 
     cli_utils::exec_command(&test_dir, "mvn test", "Run Java Tests")?;

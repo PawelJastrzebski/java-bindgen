@@ -39,6 +39,7 @@ pub fn cli() -> color_eyre::Result<()> {
         .subcommand(Command::new("build").alias("b").about("Build jar"))
         .subcommand(Command::new("jar").alias("j").alias("run").about("Run jar"))
         .subcommand(Command::new("test").alias("t").about("Run tests"))
+        .subcommand(Command::new("deploy-local").about("Deploy jar to local maven repository"))
         .subcommand(
             Command::new("clean")
                 .alias("clear")
@@ -54,10 +55,10 @@ pub fn cli() -> color_eyre::Result<()> {
         );
 
     // Print help uti
-    let mut comand_help = command.clone();
+    let mut command_help = command.clone();
     let mut print_help = move || {
         println!("{}", header("Help"));
-        comand_help.print_help().ok();
+        command_help.print_help().ok();
     };
 
     // Read args
@@ -107,6 +108,9 @@ pub fn cli() -> color_eyre::Result<()> {
     }
     if let Some(_args) = matches.subcommand_matches("jar") {
         commands::run_jar(&project_path, release_mode)?
+    }
+    if let Some(_args) = matches.subcommand_matches("deploy-local") {
+        commands::deploy_local(&project_path, release_mode)?
     }
 
     if matches.subcommand().is_none() {

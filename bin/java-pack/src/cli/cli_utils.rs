@@ -17,7 +17,7 @@ pub fn exec_command_silent(dir: &Path, command: &str) -> (i32, String, String) {
     let dir_path = dir.to_string_lossy();
 
     if !dir.exists() || !dir.is_dir() {
-        // Skip executon for invalid Paths
+        // Skip execution for invalid Paths
         return (
             -1,
             "".to_string(),
@@ -60,7 +60,7 @@ pub fn icon(kind: &str) -> String {
 }
 
 pub fn print_option(label: &str, version: Option<&String>, required: bool) {
-    let label = flabel(label);
+    let label = f_label(label);
     if let Some(ref version) = version {
         let version = strip_ansi_escapes::strip_str(version);
         println!("{} {label}{}", icon("ok"), COLOR_GREEN.paint(version))
@@ -75,7 +75,7 @@ pub fn print_option(label: &str, version: Option<&String>, required: bool) {
     }
 }
 
-pub fn flabel(label: &str) -> String {
+pub fn f_label(label: &str) -> String {
     use pad::PadStr;
     format!("{}", COLOR_WHITE.dimmed().bold().paint(label)).pad_to_width(40)
 }
@@ -84,12 +84,12 @@ pub fn header(label: &str) -> String {
     let size = crossterm::terminal::size().unwrap_or((0, 0));
     let width = size.0 as usize;
 
-    let right_witdth = (width as f32 / 1.8) as usize - label.len() - 3 - 2;
+    let right_width = (width as f32 / 1.8) as usize - label.len() - 3 - 2;
     format!(
         "{} {} {}\n",
-        "═".repeat(right_witdth / 2),
+        "═".repeat(right_width / 2),
         COLOR_WHITE.bold().dimmed().paint(label),
-        "═".repeat(right_witdth / 2)
+        "═".repeat(right_width / 2)
     )
 }
 
@@ -97,12 +97,12 @@ pub fn exit_msg(label: &str) -> String {
     let size = crossterm::terminal::size().unwrap_or((0, 0));
     let width = size.0 as usize;
 
-    let right_witdth = (width as f32 / 1.8) as usize - label.len() - 3 - 2;
+    let right_width = (width as f32 / 1.8) as usize - label.len() - 3 - 2;
     format!(
         "{} {} {}\n",
-        COLOR_RED.paint("═".repeat(right_witdth / 2)),
+        COLOR_RED.paint("═".repeat(right_width / 2)),
         COLOR_RED.bold().paint(label),
-        COLOR_RED.paint("═".repeat(right_witdth / 2))
+        COLOR_RED.paint("═".repeat(right_width / 2))
     )
 }
 
@@ -155,17 +155,17 @@ pub fn exec_command(directory: &Path, command: &str, info: &str) -> color_eyre::
     println!("{}\n", ready_info(status_code.success(), "OK"));
 
     if !status_code.success() {
-        exit()
+        return exit()
     }
 
     Ok(())
 }
 
-pub fn exit() {
+pub fn exit() -> color_eyre::Result<()> {
     println!("{}", COLOR_RED.paint(exit_msg("Exit")));
-    std::process::exit(-1)
+    std::process::exit(-1);
 }
 
-pub fn sleep(milis: u64) {
-    std::thread::sleep(std::time::Duration::from_millis(milis));
+pub fn sleep(millis: u64) {
+    std::thread::sleep(std::time::Duration::from_millis(millis));
 }

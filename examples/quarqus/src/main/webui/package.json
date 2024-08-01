@@ -1,0 +1,11 @@
+{
+  "name": "webui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "mkdir -p build && cp index.html ./build/index.html"
+  },
+  "author": "",
+  "license": "ISC"
+}
