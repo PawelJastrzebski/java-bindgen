@@ -17,4 +17,4 @@ exclude = [
 
 [dependencies]
 jni = { version = "0.21", features = ["invocation"] }
-java-bindgen-macro = { version = "0.1.0-alpha.1", path = "./bin/java-bindgen-macro" }
+java-bindgen-macro = { version = "0.1.0-alpha.2", path = "./bin/java-bindgen-macro" }

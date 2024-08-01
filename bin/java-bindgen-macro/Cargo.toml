@@ -18,6 +18,6 @@ exclude = [
 proc-macro = true
 
 [dependencies]
-java-bindgen-core = { version = "0.1.0-alpha.1", path = "../java-bindgen-core"}
+java-bindgen-core = { version = "0.1.0-alpha.2", path = "../java-bindgen-core"}
 syn = { version = "2", features = ['full'] }
 quote = "1"
