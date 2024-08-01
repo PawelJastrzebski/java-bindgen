@@ -19,28 +19,22 @@ pub struct CargoToml {
 
 impl CargoToml {
     pub fn java_bindgen(&self) -> Option<JavaBindgen> {
-        let value = self.package.java_bindgen.as_ref()?;
-        let metadata = value.get("metadata")?;
-
-        Some(JavaBindgen {
-            package: metadata
-                .get("package")
-                .and_then(|v| v.as_str())
-                .map(|v| v.to_string()),
-            local_mvn_repository: metadata
-                .get("local_mvn_repository")
-                .and_then(|v| v.as_str())
-                .map(|v| v.to_string())
-        })
+        let value = self.package.metadata.as_ref()?;
+        value.java_bindgen.clone()
     }
+}
+
+#[derive(Deserialize, Default, Debug)]
+pub struct TomlMedatata {
+    #[serde(alias = "java-bindgen")]
+    java_bindgen: Option<JavaBindgen>
 }
 
 #[derive(Deserialize, Default, Debug)]
 pub struct Package {
     pub name: String,
     pub version: String,
-    #[serde(alias = "java-bindgen")]
-    pub java_bindgen: Option<toml::Table>,
+    pub metadata: Option<TomlMedatata>,
 }
 
 #[derive(Deserialize, Debug)]

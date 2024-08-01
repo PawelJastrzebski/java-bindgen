@@ -12,5 +12,5 @@ java-bindgen = { path = "../../"}
 [lib]
 crate-type = ["cdylib"]
 
-[package.java-bindgen.metadata]
+[package.metadata.java-bindgen]
 package = "rs.image"

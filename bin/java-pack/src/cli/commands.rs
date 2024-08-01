@@ -65,14 +65,14 @@ pub(crate) fn run_jar(project_dir: &Path, release_mode: bool) -> color_eyre::Res
 
     let (_, jar) = get_jar_path(project_dir, &project_info);
     if jar.is_none() {
-        println!("{}", header("Jar not extist"));
+        println!("{}", header("Jar Not Exist"));
         println!("Building new jar..\n");
         build(project_dir, release_mode)?;
     }
 
     let (jar_name, jar) = get_jar_path(project_dir, &project_info);
     if jar.is_none() {
-        bail!("Jar not exist")
+        bail!("Jar Not Exist")
     }
 
     let command = format!("java -jar ./{jar_name}");
@@ -106,14 +106,14 @@ pub(crate) fn run_tests(project_dir: &Path, release_mode: bool) -> color_eyre::R
     // Install Jar
     let (_, jar) = get_jar_path(project_dir, &project_info);
     if jar.is_none() {
-        println!("{}", header("Jar not extist"));
+        println!("{}", header("Jar Not Exist"));
         println!("Building new jar..\n");
         build(project_dir, release_mode)?;
     }
 
     let (_, jar) = get_jar_path(project_dir, &project_info);
     let Some(jar) = jar else {
-        bail!("Jar not exist")
+        bail!("Jar Not Exist")
     };
 
     let test_dir = project_dir.join(project_info.tests_java_dir_name());
@@ -133,10 +133,10 @@ pub fn deploy_local(project_dir: &Path, release_mode: bool) -> color_eyre::Resul
 
     let Some(local_mvn_repo_dir) = toml.java_bindgen().unwrap_or_default().local_mvn_repository else {
         println!("{}", header("Invalid Configuration"));
-        println!("Setup `local_mvn_repository` in [package.java-bindgen.metadata].");
+        println!("Setup `local_mvn_repository` in [package.metadata.java-bindgen].");
         println!();
         println!("Example:");
-        println!("[package.java-bindgen.metadata]");
+        println!("[package.metadata.java-bindgen]");
         println!(r#"package = "{}""#, project_info.java_package_name);
         println!(r#"local_mvn_repository = "../local-maven-repo/" "#, );
         println!();

@@ -36,7 +36,7 @@ cargo install java-pack --version <version>
 ```
 Example:
 ```sh
-cargo install java-pack --version 0.1.0-alpha.1
+cargo install java-pack --version 0.1.0-alpha.2
 ```
 Add  `java-bindgen` dependency
 ```sh
@@ -44,7 +44,7 @@ cargo add java-bindgen
 ```
 Add `Cargo.toml` configuration:
 ```toml
-[package.java-bindgen.metadata]
+[package.metadata.java-bindgen]
 package = "your.java.package"
 ```
 Set `crate-type`:

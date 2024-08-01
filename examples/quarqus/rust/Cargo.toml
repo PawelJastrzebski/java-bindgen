@@ -11,6 +11,6 @@ image = "0.25.1"
 imageproc = "0.25.0"
 java-bindgen = { path = "../../../"}
 
-[package.java-bindgen.metadata]
+[package.metadata.java-bindgen]
 package = "image.rs"
 local_mvn_repository = "../local-maven-repo/"

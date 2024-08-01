@@ -74,7 +74,7 @@ pub fn parse_project_toml(project_dir: &std::path::Path) -> Result<CargoToml, St
             ..
         }) => {
             let example =
-                "\n\nExample:\n[package.java-bindgen.metadata]\npackage = \"com.java.package\"\n\n";
+                "\n\nExample:\n[package.metadata.java-bindgen]\npackage = \"com.java.package\"\n\n";
             if toml_parsed.java_bindgen().is_none() {
                 return Err(format!(
                     "Add java-bindgen metadata in your Cargo.toml file. {example}\nfile:{}",

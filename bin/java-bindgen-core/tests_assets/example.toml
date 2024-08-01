@@ -16,5 +16,5 @@ shells = "0.2.0"
 toml = "0.8.14"
 
 
-[package.java-bindgen.metadata]
+[package.metadata.java-bindgen]
 package = "com.test"
