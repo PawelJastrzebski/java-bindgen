@@ -3,6 +3,9 @@
 pub mod return_types {
     use java_bindgen::prelude::*;
 
+    #[java_bindgen]
+    fn returns_nothing() {}
+
     // primitives
 
     #[java_bindgen]
@@ -334,6 +337,60 @@ pub mod return_custom_type {
     }
 }
 
+pub mod return_optional {
+    use java_bindgen::prelude::*;
+
+    #[java_bindgen]
+    fn return_int_optional_some() -> Option<i32> {
+        Some(10)
+    }
+
+    #[java_bindgen]
+    fn return_int_optional_none() -> Option<i32> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_JInt_optional_some() -> Option<JInt> {
+        Some(JInt(10))
+    }
+
+    #[java_bindgen]
+    fn return_JInt_optional_none() -> Option<JInt> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_void_optional_some() -> Option<()> {
+        Some(())
+    }
+
+    #[java_bindgen]
+    fn return_void_optional_none() -> Option<()> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_bool_optional_some() -> Option<bool> {
+        Some(true)
+    }
+
+    #[java_bindgen]
+    fn return_bool_optional_none() -> Option<bool> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_char_optional_some() -> Option<char> {
+        Some('j')
+    }
+
+    #[java_bindgen]
+    fn return_char_optional_none() -> Option<char> {
+        None
+    }
+}
+
 pub mod java_logger {
     use java_bindgen::prelude::*;
 
@@ -618,7 +675,7 @@ pub mod tests {
         class: JClass,
     ) -> JResult<()> {
         let result = Java_com_test_macro_TestMacro_returns_1jshort(env, class);
-        assert_eq!(result.into_rust(test_env)?, 16);
+        assert_eq!(result, 16);
         Ok(())
     }
 }

@@ -160,6 +160,25 @@ where
     }
 }
 
+pub fn option_handler<'a, T, R: Default>(
+    result: Option<T>,
+    env: &mut jni::JNIEnv<'a>,
+) -> R
+where
+    T: IntoJavaType<'a, R> + Default,
+{
+    match result {
+        Some(ok) => match ok.into_java(env) {
+            Ok(ok) => ok,
+            Err(err) => {
+                env.j_throw_exception(err);
+                Default::default()
+            }
+        }
+        None => Default::default()
+    }
+}
+
 // JNIEnv Util
 
 macro_rules! jthrow {

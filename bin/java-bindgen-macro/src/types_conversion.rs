@@ -61,7 +61,7 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     };
 
     // void
-    if rust_type.contains("()") {
+    if rust_type.contains("()") || rust_type == "" {
         return Some("void".to_string());
     };
 
@@ -179,7 +179,7 @@ const OBJECT_TYPES: &[&str] = &[
     "()", "JByte", "JShort", "JInt", "JLong", "JFloat", "JDouble", "JBoolean", "JChar",
 ];
 
-// Revirte [Rust Type] to [JNI Rust]
+// Rewrite [Rust Type] to [JNI Rust]
 pub fn rewrite_rust_type_to_jni(
     ty: &TokenStream2,
     lifetime: &TokenStream2,

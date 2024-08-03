@@ -9,6 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 public class PrimitivesTest {
 
     @Test
+    public void returns_nothing() {
+        TestMacro.returns_nothing();
+    }
+
+    @Test
     public void returns_void() {
         TestMacro.returns_void();
     }
