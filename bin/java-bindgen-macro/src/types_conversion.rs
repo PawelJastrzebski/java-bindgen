@@ -44,6 +44,21 @@ pub fn to_java_list(rust_type: String, errors: &mut CompileErrors) -> String {
     format!("List<{obj}>")
 }
 
+// Extract T from JList<T>
+pub fn extract_from_option(rust_type: String, errors: &mut CompileErrors) -> String {
+    let default = "void".to_string();
+    let Some(split_index) = rust_type.find('<') else {
+        return default;
+    };
+    let (_, right) = rust_type.split_at(split_index + 1);
+
+    let Some(split_index) = right.rfind('>') else {
+        return default;
+    };
+    let (ty, _) = right.split_at(split_index);
+    rewrite_rust_to_java(&ts2(ty), errors).unwrap_or("void".to_string())
+}
+
 // rewrite [Rust] to [Java Type]
 pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Option<String> {
     let rust_type = ty.to_string().replace(' ', "");
@@ -58,6 +73,10 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
 
     if rust_type.contains("JList<") {
         return Some(to_java_list(rust_type, errors));
+    };
+
+    if rust_type.contains("Option<") {
+        return Some(extract_from_option(rust_type, errors));
     };
 
     // void
@@ -126,7 +145,7 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
         return Some("Character".to_string());
     };
 
-    // rust primitves
+    // rust primitives
     if rust_type == "u8" || rust_type == "i8" {
         return Some("byte".to_string());
     }

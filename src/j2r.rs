@@ -9,6 +9,18 @@ pub trait IntoRustType<'local, T> {
     fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>;
 }
 
+impl<'local, T: IntoRustType<'local, R>, R> IntoRustType<'local, Option<R>> for Option<T> {
+    fn into_rust(self, env: &mut JNIEnv<'local>) -> JResult<Option<R>> {
+        match self {
+            None => { Ok(None) }
+            Some(v) => {
+                let t = v.into_rust(env)?;
+                Ok(Some(t))
+            }
+        }
+    }
+}
+
 impl<'local> IntoRustType<'local, bool> for jni::sys::jboolean {
     fn into_rust(self, _: &mut jni::JNIEnv<'local>) -> crate::JResult<bool> {
         Ok(self == jni::sys::JNI_TRUE)
@@ -94,6 +106,51 @@ impl<'local> IntoRustType<'local, String> for JObject<'local> {
     }
 }
 
+// JValueGen to primitive (Option)
+
+#[allow(non_snake_case)]
+macro_rules! JValueGen_Option_impl {
+    ($rust_type:ty) => {
+        impl<'local> IntoRustType<'local, Option<$rust_type>> for jni::objects::JValueGen<JObject<'local>> {
+            fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Option<$rust_type>> {
+                let v: $rust_type = self.into_rust(env)?;
+                Ok(Some(v))
+            }
+        }
+    };
+}
+JValueGen_Option_impl!(u8);
+JValueGen_Option_impl!(i8);
+JValueGen_Option_impl!(i16);
+JValueGen_Option_impl!(i32);
+JValueGen_Option_impl!(i64);
+JValueGen_Option_impl!(f32);
+JValueGen_Option_impl!(f64);
+JValueGen_Option_impl!(bool);
+JValueGen_Option_impl!(char);
+
+impl<'local> IntoRustType<'local, Option<String>> for jni::objects::JValueGen<JObject<'local>> {
+    fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Option<String>> {
+        let obj = self.l().j_catch_ini(env, "Cast failed [JObject -> String]")?;
+        if obj.is_null() {
+            return Ok(None)
+        }
+        let v: String = obj.into_rust(env)?;
+        Ok(Some(v))
+    }
+}
+
+impl<'local> IntoRustType<'local, Option<Vec<u8>>> for jni::objects::JValueGen<JObject<'local>> {
+    fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Option<Vec<u8>>> {
+        let obj = self.l().j_catch_ini(env, "Cast failed [JObject -> byte[]]")?;
+        if obj.is_null() {
+            return Ok(None)
+        }
+        let v: Vec<u8> = obj.into_rust(env)?;
+        Ok(Some(v))
+    }
+}
+
 // JValueGen to primitive
 
 impl<'local> IntoRustType<'local, u8> for jni::objects::JValueGen<JObject<'local>> {
@@ -161,13 +218,13 @@ impl<'local> IntoRustType<'local, String> for jni::objects::JValueGen<JObject<'l
 
 impl<'local> IntoRustType<'local, Vec<u8>> for jni::objects::JValueGen<JObject<'local>> {
     fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Vec<u8>> {
-        let obj = self.l()?;
+        let obj = self.l().j_catch_ini(env, "Cast failed [JObject -> byte[]]")?;
         obj.into_rust(env)
     }
 }
 
 // JValueGen to class primitive
-
+#[allow(non_snake_case)]
 macro_rules! JValueGen_obj_to_class_primitive_impl {
     ($rust_type:tt) => {
         impl<'local> IntoRustType<'local, $rust_type>
@@ -191,6 +248,34 @@ JValueGen_obj_to_class_primitive_impl!(JDouble);
 JValueGen_obj_to_class_primitive_impl!(JBoolean);
 JValueGen_obj_to_class_primitive_impl!(JChar);
 
+#[allow(non_snake_case)]
+macro_rules! JValueGen_Option_obj_to_class_primitive_impl {
+    ($rust_type:tt) => {
+        impl<'local> IntoRustType<'local, Option<$rust_type>>
+            for jni::objects::JValueGen<JObject<'local>>
+        {
+            fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Option<$rust_type>> {
+                let obj = self.l()?;
+                if obj.is_null() {
+                    return Ok(None)
+                }
+
+                let byte = obj.into_rust(env)?;
+                Ok(Some($rust_type(byte)))
+            }
+        }
+    };
+}
+
+JValueGen_Option_obj_to_class_primitive_impl!(JByte);
+JValueGen_Option_obj_to_class_primitive_impl!(JShort);
+JValueGen_Option_obj_to_class_primitive_impl!(JInt);
+JValueGen_Option_obj_to_class_primitive_impl!(JLong);
+JValueGen_Option_obj_to_class_primitive_impl!(JFloat);
+JValueGen_Option_obj_to_class_primitive_impl!(JDouble);
+JValueGen_Option_obj_to_class_primitive_impl!(JBoolean);
+JValueGen_Option_obj_to_class_primitive_impl!(JChar);
+
 // JObject to class primitive
 
 macro_rules! obj_to_class_primitive_impl {
@@ -213,7 +298,18 @@ obj_to_class_primitive_impl!(JDouble);
 obj_to_class_primitive_impl!(JBoolean);
 obj_to_class_primitive_impl!(JChar);
 
-// JObject to primitve
+// impl<'local> IntoRustType<'local, Option<JInt>> for jni::objects::JObject<'local> {
+//     fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<Option<JInt>> {
+//         if self.is_null() {
+//             return Ok(None)
+//         }
+//
+//         let value = self.into_rust(env)?;
+//         Ok(Some(JInt(value)))
+//     }
+// }
+
+// JObject to primitive
 
 impl<'local> IntoRustType<'local, u8> for JObject<'local> {
     fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<u8> {

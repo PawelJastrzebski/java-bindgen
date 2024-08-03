@@ -337,6 +337,67 @@ pub mod return_custom_type {
     }
 }
 
+pub mod custom_types_optinal {
+    use java_bindgen::prelude::*;
+
+    #[derive(Default, JavaClass)]
+    struct OptionPrimitive {
+        id: Option<i32>,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_option(object: OptionPrimitive) -> JResult<OptionPrimitive> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionClassWrapper {
+        id: Option<JInt>,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_option2(object: OptionClassWrapper) -> JResult<OptionClassWrapper> {
+        println!("{:?}", object.id);
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionAllPrimitive {
+        java_b: Option<u8>,
+        java_s: Option<i16>,
+        java_i: Option<i32>,
+        java_l: Option<i64>,
+        java_f: Option<f32>,
+        java_d: Option<f64>,
+        java_c: Option<char>,
+        java_bool: Option<bool>,
+        java_string: Option<String>,
+        java_barray: Option<Vec<u8>>,
+    }
+
+    #[java_bindgen]
+    fn pass_option_all_primitives(object: OptionAllPrimitive) -> JResult<OptionAllPrimitive> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionClassWrappers {
+        java_b: Option<JByte>,
+        java_s: Option<JShort>,
+        java_i: Option<JInt>,
+        java_l: Option<JLong>,
+        java_f: Option<JFloat>,
+        java_d: Option<JDouble>,
+        java_c: Option<JChar>,
+        java_bool: Option<JBoolean>,
+    }
+
+    #[java_bindgen]
+    fn pass_option_all_class_wrappers(object: OptionClassWrappers) -> JResult<OptionClassWrappers> {
+        Ok(object)
+    }
+}
+
 pub mod return_optional {
     use java_bindgen::prelude::*;
 

@@ -3,32 +3,32 @@ use std::borrow::BorrowMut;
 
 // Java primary types wrappers
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JByte(pub i8);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JShort(pub i16);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JInt(pub i32);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JLong(pub i64);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JFloat(pub f32);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JDouble(pub f64);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JBoolean(pub bool);
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JChar(pub char);
 
 #[repr(transparent)]
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct JVoid();
 
 // Getters
@@ -176,6 +176,34 @@ mod jtypes {
             Self::j_type()
         }
         fn into_j_value(self, _: &mut jni::JNIEnv<'local>) -> JResult<JValueOwned<'local>>;
+    }
+
+    impl<'local, T: JTypeInfo<'local> + Default> JTypeInfo<'local> for Option<T> {
+        fn j_return_type() -> ReturnType {
+            T::j_return_type()
+        }
+
+        fn j_type() -> JavaType {
+            T::j_type()
+        }
+
+        fn into_j_value(self, env: &mut JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
+            let ty = T::j_type();
+            match ty {
+                JavaType::Primitive(p) => {
+                    match self {
+                        None => T::default().into_j_value(env),
+                        Some(v) => v.into_j_value(env)
+                    }
+                }
+                _ => {
+                    match self {
+                        None => Ok(JValueOwned::Object(JObject::null())),
+                        Some(v) => v.into_j_value(env)
+                    }
+                }
+            }
+        }
     }
 
     impl<'local> JTypeInfo<'local> for JVoid {
