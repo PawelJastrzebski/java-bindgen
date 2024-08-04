@@ -27,6 +27,15 @@ public class ReturnOptionalTest {
     }
 
     @Test
+    public void return_str_optional() {
+        String some = TestMacro.return_str_optional_some();
+        assertEquals("Hello", some);
+
+        String none = TestMacro.return_str_optional_none();
+        assertNull(none);
+    }
+
+    @Test
     public void return_void_optional() {
         TestMacro.return_void_optional_some();
         TestMacro.return_void_optional_none();
@@ -50,6 +59,25 @@ public class ReturnOptionalTest {
         // no null representation for primitive
         char none = TestMacro.return_char_optional_none();
         assertEquals('\0', none);
+    }
+
+    @Test
+    public void return_int_result_optional() {
+        int some = TestMacro.return_int_result_optional_some();
+        assertEquals(101, some);
+
+        // no null representation for primitive
+        int none = TestMacro.return_int_result_optional_none();
+        assertEquals(0, none);
+    }
+
+    @Test
+    public void return_str_result_optional() {
+        String some = TestMacro.return_str_result_optional_some();
+        assertEquals("Option<Hello>", some);
+
+        String none = TestMacro.return_str_result_optional_none();
+        assertNull(none);
     }
 
 }

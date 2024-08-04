@@ -44,8 +44,8 @@ pub fn to_java_list(rust_type: String, errors: &mut CompileErrors) -> String {
     format!("List<{obj}>")
 }
 
-// Extract T from JList<T>
-pub fn extract_from_option(rust_type: String, errors: &mut CompileErrors) -> String {
+// Extract T from Option<T>
+fn extract_from_option(rust_type: String, errors: &mut CompileErrors) -> String {
     let default = "void".to_string();
     let Some(split_index) = rust_type.find('<') else {
         return default;
@@ -169,7 +169,7 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     }
     if rust_type == "char" {
         return Some("char".to_string());
-    } 
+    }
     if rust_type == "Vec<u8>" {
         return Some("byte[]".to_string());
     }
@@ -194,6 +194,19 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     // None
 }
 
+// Extract T from Option<T>
+fn extract_jni_from_option(rust_type: String, lifetime: &TokenStream2, errors: &mut CompileErrors) -> Option<TokenStream2> {
+    let Some(split_index) = rust_type.find('<') else {
+        return None;
+    };
+    let (_, right) = rust_type.split_at(split_index + 1);
+    let Some(split_index) = right.rfind('>') else {
+        return None;
+    };
+    let (ty, _) = right.split_at(split_index);
+    rewrite_rust_type_to_jni(&ts2(ty), lifetime, errors)
+}
+
 const OBJECT_TYPES: &[&str] = &[
     "()", "JByte", "JShort", "JInt", "JLong", "JFloat", "JDouble", "JBoolean", "JChar",
 ];
@@ -202,7 +215,7 @@ const OBJECT_TYPES: &[&str] = &[
 pub fn rewrite_rust_type_to_jni(
     ty: &TokenStream2,
     lifetime: &TokenStream2,
-    _errors: &mut CompileErrors,
+    errors: &mut CompileErrors,
 ) -> Option<TokenStream2> {
     let rust_type = ty.to_string().replace(' ', "");
 
@@ -212,6 +225,10 @@ pub fn rewrite_rust_type_to_jni(
     };
     if rust_type.contains("JClass<") {
         return None;
+    };
+
+    if rust_type.contains("Option<") {
+        return extract_jni_from_option(rust_type, lifetime, errors);
     };
 
     // JNI Types

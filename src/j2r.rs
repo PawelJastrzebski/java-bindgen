@@ -9,6 +9,7 @@ pub trait IntoRustType<'local, T> {
     fn into_rust(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>;
 }
 
+// Option<T>
 impl<'local, T: IntoRustType<'local, R>, R> IntoRustType<'local, Option<R>> for Option<T> {
     fn into_rust(self, env: &mut JNIEnv<'local>) -> JResult<Option<R>> {
         match self {

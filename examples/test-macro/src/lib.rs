@@ -437,6 +437,16 @@ pub mod return_optional {
     }
 
     #[java_bindgen]
+    fn return_str_optional_some() -> Option<String> {
+        Some("Hello".to_string())
+    }
+
+    #[java_bindgen]
+    fn return_str_optional_none() -> Option<String> {
+        None
+    }
+
+    #[java_bindgen]
     fn return_void_optional_some() -> Option<()> {
         Some(())
     }
@@ -464,6 +474,26 @@ pub mod return_optional {
     #[java_bindgen]
     fn return_char_optional_none() -> Option<char> {
         None
+    }
+
+    #[java_bindgen]
+    fn return_int_result_optional_some() -> JResult<Option<i32>> {
+        Ok(Some(101))
+    }
+
+    #[java_bindgen]
+    fn return_int_result_optional_none() -> JResult<Option<i32>> {
+        Ok(None)
+    }
+
+    #[java_bindgen]
+    fn return_str_result_optional_some() -> JResult<Option<String>> {
+        Ok(Some("Option<Hello>".to_string()))
+    }
+
+    #[java_bindgen]
+    fn return_str_result_optional_none() -> JResult<Option<String>> {
+        Ok(None)
     }
 }
 
