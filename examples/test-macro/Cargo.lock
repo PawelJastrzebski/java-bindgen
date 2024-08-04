@@ -93,7 +93,7 @@ dependencies = [
 
 [[package]]
 name = "java-bindgen-core"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 dependencies = [
  "convert_case",
  "fs2",
@@ -105,7 +105,7 @@ dependencies = [
 
 [[package]]
 name = "java-bindgen-macro"
-version = "0.1.0-alpha.2"
+version = "0.1.0-alpha.3"
 dependencies = [
  "java-bindgen-core",
  "quote",

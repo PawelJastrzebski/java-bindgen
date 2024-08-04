@@ -357,7 +357,6 @@ pub mod custom_types_optinal {
 
     #[java_bindgen]
     fn pass_java_class_option2(object: OptionClassWrapper) -> JResult<OptionClassWrapper> {
-        println!("{:?}", object.id);
         Ok(object)
     }
 
