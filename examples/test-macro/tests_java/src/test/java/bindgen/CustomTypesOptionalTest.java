@@ -141,4 +141,29 @@ public class CustomTypesOptionalTest {
         }
     }
 
+    @Test
+    public void pass_option_element() {
+        {
+            OptionElement ele = new OptionElement(3, new OptionNode(2));
+            OptionElement res = TestMacro.pass_option_element(ele);
+            assertNotNull(res.getId());
+            assertNotNull(res.getParent());
+            assertEquals(3, res.getId());
+            assertEquals(2, res.getParent().getId());
+        }
+        {
+            OptionElement ele = new OptionElement(null, new OptionNode(null));
+            OptionElement res = TestMacro.pass_option_element(ele);
+            assertNull(res.getId());
+            assertNotNull(res.getParent());
+            assertNull(res.getParent().getId());
+        }
+        {
+            OptionElement ele = new OptionElement(null, null);
+            OptionElement res = TestMacro.pass_option_element(ele);
+            assertNull(res.getId());
+            assertNull(res.getParent());
+        }
+    }
+
 }

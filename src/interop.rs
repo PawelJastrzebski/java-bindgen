@@ -190,7 +190,7 @@ mod jtypes {
         fn into_j_value(self, env: &mut JNIEnv<'local>) -> JResult<JValueOwned<'local>> {
             let ty = T::j_type();
             match ty {
-                JavaType::Primitive(p) => {
+                JavaType::Primitive(_) => {
                     match self {
                         None => T::default().into_j_value(env),
                         Some(v) => v.into_j_value(env)

@@ -396,6 +396,22 @@ pub mod custom_types_optinal {
     fn pass_option_all_class_wrappers(object: OptionClassWrappers) -> JResult<OptionClassWrappers> {
         Ok(object)
     }
+
+    #[derive(Default, JavaClass)]
+    struct OptionNode {
+        id: Option<JInt>,
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionElement {
+        id: Option<JInt>,
+        parent: Option<OptionNode>,
+    }
+
+    #[java_bindgen]
+    fn pass_option_element(object: OptionElement) -> JResult<OptionElement> {
+        Ok(object)
+    }
 }
 
 pub mod return_optional {
@@ -706,9 +722,9 @@ pub mod readme_examples {
 
 #[cfg(test)]
 pub mod tests {
+    use java_bindgen::prelude::*;
     use super::input_types::*;
     use super::return_types::*;
-    use java_bindgen::prelude::*;
 
     #[test_jvm]
     fn should_input_jshort<'a>(_: &mut JNIEnv<'a>, env: JNIEnv<'a>, class: JClass) -> JResult<()> {
@@ -731,7 +747,7 @@ pub mod tests {
 
     #[test_jvm]
     fn should_return_jshort<'a>(
-        test_env: &mut JNIEnv<'a>,
+        _test_env: &mut JNIEnv<'a>,
         env: JNIEnv<'a>,
         class: JClass,
     ) -> JResult<()> {
