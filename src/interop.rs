@@ -592,6 +592,10 @@ mod jtypes {
                 TypeSignature::from_str("(Ljava/lang/String;[B)V").unwrap(),
                 signature_by_type!( String , Vec<u8> => JVoid )
             );
+            assert_eq!(
+                TypeSignature::from_str("(Ljava/lang/String;[B)I").unwrap(),
+                signature_by_type!( Option<String> , Option<Vec<u8>> => Option<i32> )
+            );
 
             println!("{}", signature_by_type!( => ));
             println!("{}", signature_by_type!( => String));

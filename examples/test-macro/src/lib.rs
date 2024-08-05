@@ -23,7 +23,7 @@ pub mod return_types {
     }
 
     #[java_bindgen]
-    fn returns_jint() -> JResult<jint> {
+    fn returns_jint() -> JResult<jni::sys::jint> {
         Ok(32_i32)
     }
     #[java_bindgen]
@@ -117,7 +117,7 @@ pub mod return_types {
     }
 
     #[java_bindgen]
-    fn returns_JLong() -> JResult<JLong> {
+    fn returns_JLong() -> JResult<java_bindgen::interop::JLong> {
         Ok(JLong(4))
     }
 
@@ -493,6 +493,16 @@ pub mod return_optional {
 
     #[java_bindgen]
     fn return_str_result_optional_none() -> JResult<Option<String>> {
+        Ok(None)
+    }
+
+    #[java_bindgen]
+    fn return_list_result_optional_some() -> JResult<Option<JList<std::string::String>>> {
+        Ok(Some(JList(vec!["Option<Hello>".to_string()])))
+    }
+
+    #[java_bindgen]
+    fn return_list_result_optional_none() -> JResult<Option<JList<String>>> {
         Ok(None)
     }
 }

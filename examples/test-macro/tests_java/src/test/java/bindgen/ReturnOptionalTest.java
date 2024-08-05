@@ -3,6 +3,8 @@ package bindgen;
 import com.test.macro.*;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ReturnOptionalTest {
@@ -77,6 +79,16 @@ public class ReturnOptionalTest {
         assertEquals("Option<Hello>", some);
 
         String none = TestMacro.return_str_result_optional_none();
+        assertNull(none);
+    }
+
+    @Test
+    public void return_list_result_optional() {
+        List<String> some = TestMacro.return_list_result_optional_some();
+        assertNotNull(some);
+        assertEquals("Option<Hello>", some.get(0));
+
+        List<String> none = TestMacro.return_list_result_optional_none();
         assertNull(none);
     }
 
