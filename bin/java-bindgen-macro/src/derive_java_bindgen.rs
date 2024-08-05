@@ -14,6 +14,7 @@ use crate::{
     types_conversion::rewrite_rust_type_to_jni,
     util::{self, parse_attr_to_map, ts2, CompileErrors},
 };
+use crate::common::BindgenReturnType;
 
 // Extract lifetime form args
 pub fn extract_jni_env_lifetime(
@@ -179,7 +180,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
             let return_type = attribute
                 .returns
                 .clone()
-                .unwrap_or_else(|| produce_java_return(&return_type, &mut errors));
+                .unwrap_or_else(|| produce_java_return(return_type.as_token(), &mut errors));
 
             store.add_ffi_method(JavaFFIMethod {
                 id: rust_fn_name.clone(),
@@ -219,15 +220,33 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
 
         // Return type conversion
-        let return_type = rewrite_rust_type_to_jni(&return_type, &jni_env_lifetime, &mut errors)
+        let jni_return_type = rewrite_rust_type_to_jni(return_type.as_token(), &jni_env_lifetime, &mut errors)
             .unwrap_or_else(|| {
                 // Return JObject if custom type specified
                 if attribute.returns.is_some() {
                     quote! { jni::objects::JObject #jni_env_lifetime }
                 } else {
-                    return_type
+                    return_type.as_token().clone()
                 }
             });
+
+        let return_handler = match return_type {
+            BindgenReturnType::JResult(_) => {
+                quote! {
+                    java_bindgen::exception::j_result_handler(r, &mut #env_indent)
+                }
+            }
+            BindgenReturnType::Option(_) => {
+                quote! {
+                    java_bindgen::exception::option_handler(r, &mut #env_indent)
+                }
+            }
+            BindgenReturnType::None(_) => {
+                quote! {
+                    Default::default()
+                }
+            }
+        };
 
         return quote! {
 
@@ -238,12 +257,12 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             #[no_mangle]
             #[allow(unused_mut, non_snake_case, unused_variables)]
-            pub extern "system" fn #j_ffi_fn_name #jni_env_lifetime(#args) -> #return_type {
+            pub extern "system" fn #j_ffi_fn_name #jni_env_lifetime(#args) -> #jni_return_type {
 
                 #rewrites
 
                 let r = #fn_name(#args_names);
-                java_bindgen::exception::j_result_handler(r, &mut #env_indent)
+                #return_handler
             }
 
         }

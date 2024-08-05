@@ -2,6 +2,23 @@ use crate::util::{ts2, CompileErrors};
 use quote::quote;
 use syn::__private::TokenStream2;
 
+// returns (path, type)
+fn extract_rust_type(ty: &TokenStream2) -> (String, String) {
+    let ty = ty.to_string().replace("& mut", "").replace(' ', "");
+
+    let generic = ty.rfind("<").unwrap_or(ty.len());
+    let Some(split_index) = ty.rfind("::") else {
+        return ("".to_string(), ty);
+    };
+
+    if split_index > generic {
+        return ("".to_string(), ty);
+    }
+
+    let (left, right) = ty.split_at(split_index + 2);
+    (left.to_string(), right.to_string())
+}
+
 // Extract T from JList<T>
 pub fn to_java_list(rust_type: String, errors: &mut CompileErrors) -> String {
     let default = "List<Object>".to_string();
@@ -44,89 +61,108 @@ pub fn to_java_list(rust_type: String, errors: &mut CompileErrors) -> String {
     format!("List<{obj}>")
 }
 
+// Extract T from Option<T>
+fn extract_from_option(rust_type: String, errors: &mut CompileErrors) -> String {
+    let default = "void".to_string();
+    let Some(split_index) = rust_type.find('<') else {
+        return default;
+    };
+    let (_, right) = rust_type.split_at(split_index + 1);
+
+    let Some(split_index) = right.rfind('>') else {
+        return default;
+    };
+    let (ty, _) = right.split_at(split_index);
+    rewrite_rust_to_java(&ts2(ty), errors).unwrap_or("void".to_string())
+}
+
 // rewrite [Rust] to [Java Type]
 pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Option<String> {
-    let rust_type = ty.to_string().replace(' ', "");
+    let (_, rust_type) = extract_rust_type(&ty);
 
     // ignored types
-    if rust_type.contains("JNIEnv") {
+    if rust_type.starts_with("JNIEnv<") {
         return None;
     };
-    if rust_type.contains("JClass") {
+    if rust_type.starts_with("JClass<") {
         return None;
     };
 
-    if rust_type.contains("JList<") {
+    if rust_type.starts_with("JList<") {
         return Some(to_java_list(rust_type, errors));
     };
 
+    if rust_type.starts_with("Option<") {
+        return Some(extract_from_option(rust_type, errors));
+    };
+
     // void
-    if rust_type.contains("()") {
+    if rust_type == "()" || rust_type == "" {
         return Some("void".to_string());
     };
 
     // jni primitives
-    if rust_type.contains("jbyte") {
+    if rust_type == "jbyte" {
         return Some("byte".to_string());
     };
-    if rust_type.contains("jchar") {
+    if rust_type == "jchar" {
         return Some("char".to_string());
     };
-    if rust_type.contains("jboolean") {
+    if rust_type == "jboolean" {
         return Some("boolean".to_string());
     };
-    if rust_type.contains("jint") {
+    if rust_type == "jint" {
         return Some("int".to_string());
     };
-    if rust_type.contains("jshort") {
+    if rust_type == "jshort" {
         return Some("short".to_string());
     };
-    if rust_type.contains("jlong") {
+    if rust_type == "jlong" {
         return Some("long".to_string());
     };
-    if rust_type.contains("jfloat") {
+    if rust_type == "jfloat" {
         return Some("float".to_string());
     };
-    if rust_type.contains("double") {
+    if rust_type == "jdouble" {
         return Some("double".to_string());
     };
-    if rust_type.contains("JString") {
+    if rust_type.starts_with("JString<") {
         return Some("String".to_string());
     };
-    if rust_type.contains("JObject") {
+    if rust_type.starts_with("JObject<") {
         return Some("Object".to_string());
     };
-    if rust_type.contains("JByteArray") {
+    if rust_type.starts_with("JByteArray<") {
         return Some("byte[]".to_string());
     };
 
     // class primitive wrappers
-    if rust_type.contains("JByte") {
+    if rust_type == "JByte" {
         return Some("Byte".to_string());
     };
-    if rust_type.contains("JShort") {
+    if rust_type == "JShort" {
         return Some("Short".to_string());
     };
-    if rust_type.contains("JInt") {
+    if rust_type == "JInt" {
         return Some("Integer".to_string());
     };
-    if rust_type.contains("JLong") {
+    if rust_type == "JLong" {
         return Some("Long".to_string());
     };
-    if rust_type.contains("JFloat") {
+    if rust_type == "JFloat" {
         return Some("Float".to_string());
     };
-    if rust_type.contains("JDouble") {
+    if rust_type == "JDouble" {
         return Some("Double".to_string());
     };
-    if rust_type.contains("JBoolean") {
+    if rust_type == "JBoolean" {
         return Some("Boolean".to_string());
     };
-    if rust_type.contains("JChar") {
+    if rust_type == "JChar" {
         return Some("Character".to_string());
     };
 
-    // rust primitves
+    // rust primitives
     if rust_type == "u8" || rust_type == "i8" {
         return Some("byte".to_string());
     }
@@ -150,18 +186,18 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     }
     if rust_type == "char" {
         return Some("char".to_string());
-    } 
+    }
     if rust_type == "Vec<u8>" {
         return Some("byte[]".to_string());
     }
 
     // objects
 
-    if rust_type.contains("String") {
+    if rust_type == "String" {
         return Some("String".to_string());
     };
 
-    if rust_type.contains("Vec<u8>") {
+    if rust_type == "Vec<u8>" {
         return Some("byte[]".to_string());
     };
 
@@ -175,32 +211,54 @@ pub fn rewrite_rust_to_java(ty: &TokenStream2, errors: &mut CompileErrors) -> Op
     // None
 }
 
+// Extract T from Option<T>
+fn extract_jni_from_option(
+    rust_type: String,
+    lifetime: &TokenStream2,
+    errors: &mut CompileErrors,
+) -> Option<TokenStream2> {
+    let Some(split_index) = rust_type.find('<') else {
+        return None;
+    };
+    let (_, right) = rust_type.split_at(split_index + 1);
+    let Some(split_index) = right.rfind('>') else {
+        return None;
+    };
+    let (ty, _) = right.split_at(split_index);
+    rewrite_rust_type_to_jni(&ts2(ty), lifetime, errors)
+}
+
 const OBJECT_TYPES: &[&str] = &[
     "()", "JByte", "JShort", "JInt", "JLong", "JFloat", "JDouble", "JBoolean", "JChar",
 ];
 
-// Revirte [Rust Type] to [JNI Rust]
+// Rewrite [Rust Type] to [JNI Rust]
 pub fn rewrite_rust_type_to_jni(
     ty: &TokenStream2,
     lifetime: &TokenStream2,
-    _errors: &mut CompileErrors,
+    errors: &mut CompileErrors,
 ) -> Option<TokenStream2> {
-    let rust_type = ty.to_string().replace(' ', "");
+    let (_, rust_type) = extract_rust_type(&ty);
 
     // Ignored types
-    if rust_type.contains("JNIEnv<") {
+    if rust_type.starts_with("JNIEnv<") {
         return None;
     };
-    if rust_type.contains("JClass<") {
+    if rust_type.starts_with("JClass<") {
         return None;
+    };
+
+    // Option<T>
+    if rust_type.starts_with("Option<") {
+        return extract_jni_from_option(rust_type, lifetime, errors);
     };
 
     // JNI Types
 
-    if rust_type.contains("JString<") {
+    if rust_type.starts_with("JString<") {
         return Some(quote! { jni::objects::JString #lifetime });
     };
-    if rust_type.contains("JByteArray<") {
+    if rust_type.starts_with("JByteArray<") {
         return Some(quote! { jni::objects::JByteArray #lifetime });
     };
 
@@ -208,8 +266,7 @@ pub fn rewrite_rust_type_to_jni(
         return Some(quote! { jni::objects::JObject #lifetime });
     };
 
-    // primitives
-
+    // Primitives
     if rust_type == "jbyte" || rust_type == "u8" || rust_type == "i8" {
         return Some(quote! { jni::sys::jbyte });
     };
@@ -236,7 +293,6 @@ pub fn rewrite_rust_type_to_jni(
     };
 
     // Typed Objects
-
     if rust_type == "String" {
         return Some(quote! { jni::objects::JString #lifetime });
     };
@@ -245,4 +301,67 @@ pub fn rewrite_rust_type_to_jni(
     };
 
     Some(quote! { jni::objects::JObject #lifetime })
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::{extract_rust_type, rewrite_rust_to_java};
+    use crate::{
+        types_conversion::rewrite_rust_type_to_jni,
+        util::{ts2, CompileErrors},
+    };
+
+    #[test]
+    fn should_extract_type() {
+        let ty = extract_rust_type(&ts2("String"));
+        assert_eq!(("".to_string(), "String".to_string()), ty);
+
+        let ty = extract_rust_type(&ts2("std::string::String"));
+        assert_eq!(("std::string::".to_string(), "String".to_string()), ty);
+
+        let ty = extract_rust_type(&ts2("JList<std::string::String>"));
+        assert_eq!(
+            ("".to_string(), "JList<std::string::String>".to_string()),
+            ty
+        );
+    }
+
+    #[test]
+    fn should_rewrite_to_java() {
+        let errors = &mut CompileErrors::default();
+        let ty = rewrite_rust_to_java(&ts2("Option<String>"), errors);
+        assert_eq!(Some("String".to_string()), ty);
+
+        let ty = rewrite_rust_to_java(&ts2("Option<std::string::String>"), errors);
+        assert_eq!(Some("String".to_string()), ty);
+
+        let ty = rewrite_rust_to_java(&ts2("JList<std::string::String>"), errors);
+        assert_eq!(Some("List<String>".to_string()), ty);
+
+        let ty = rewrite_rust_to_java(&ts2("Option<JList<std::string::String>>"), errors);
+        assert_eq!(Some("List<String>".to_string()), ty);
+
+        let ty = rewrite_rust_to_java(&ts2("jni::sys::jint"), errors);
+        assert_eq!(Some("int".to_string()), ty);
+
+        let ty = rewrite_rust_to_java(&ts2("java_bindgen::interop::JLong"), errors);
+        assert_eq!(Some("Long".to_string()), ty);
+    }
+
+    #[test]
+    fn should_rewrite_to_jni() {
+        let errors = &mut CompileErrors::default();
+        let lifetime = ts2("<'local>");
+        let ty = rewrite_rust_type_to_jni(&ts2("JNIEnv<'l>"), &lifetime, errors).map(|ts| ts.to_string());
+        assert_eq!(None, ty);
+
+        let ty = rewrite_rust_type_to_jni(&ts2("&mut JNIEnv<'l>"), &lifetime, errors).map(|ts| ts.to_string());
+        assert_eq!(None, ty);
+
+        let ty = rewrite_rust_type_to_jni(&ts2("JDouble"), &lifetime, errors).map(|ts| ts.to_string());
+        assert_eq!(Some("jni :: objects :: JObject <'local >"), ty.as_deref());       
+        
+        let ty = rewrite_rust_type_to_jni(&ts2("MyCustomClassStruct"), &lifetime, errors).map(|ts| ts.to_string());
+        assert_eq!(Some("jni :: objects :: JObject <'local >"), ty.as_deref());
+    }
 }

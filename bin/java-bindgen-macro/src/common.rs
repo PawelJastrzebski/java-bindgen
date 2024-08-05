@@ -9,7 +9,7 @@ use syn::{spanned::Spanned, ReturnType};
 
 use crate::{types_conversion::rewrite_rust_to_java, util::CompileErrors};
 
-// Java arguments list for FFI interface (Java side arguments list) 
+// Java arguments list for FFI interface (Java side arguments list)
 pub fn produce_java_args(
     inputs: &syn::punctuated::Punctuated<syn::FnArg, syn::Token![,]>,
     errors: &mut CompileErrors,
@@ -37,30 +37,57 @@ pub fn produce_java_return(return_type: &TokenStream2, errors: &mut CompileError
     "void".to_string()
 }
 
-pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors) -> TokenStream2 {
+pub enum BindgenReturnType {
+    JResult(TokenStream2),
+    Option(TokenStream2),
+    None(TokenStream2),
+}
+
+impl BindgenReturnType {
+    pub fn as_token(&self) -> &TokenStream2 {
+        match self {
+            BindgenReturnType::JResult(ts) => ts,
+            BindgenReturnType::Option(ts) => ts,
+            BindgenReturnType::None(ts) => ts
+        }
+    }
+}
+
+pub fn produce_rust_result_type(r_type: &ReturnType, errors: &mut CompileErrors) -> BindgenReturnType {
     if let ReturnType::Type(_, r_type) = r_type {
-        if let syn::Type::Path(ref path) = **r_type {
+        if let Type::Path(ref path) = **r_type {
             for segment in path.path.segments.iter() {
-                if !segment.ident.to_string().contains("JResult") {
+                let segment_indent_str = segment.ident.to_string();
+                let syn::PathArguments::AngleBracketed(ref arg) = segment.arguments else {
                     errors.add_spaned(
                         r_type.span(),
-                        format!(
-                            "Expected java_bindgen::JResult<{}>",
-                            r_type.to_token_stream().to_string().replace(' ', "")
-                        ),
+                        "Expected java_bindgen::JResult<T> or Option<T>".to_string(),
                     );
+                    continue;
+                };
+                // <T>
+                let inner_type = arg.args.to_token_stream();
 
-                    return r_type.to_token_stream()
+                if segment_indent_str.contains("JResult") {
+                    return BindgenReturnType::JResult(inner_type);
                 }
 
-                if let syn::PathArguments::AngleBracketed(ref arg) = segment.arguments {
-                    // Inner type
-                    return arg.args.to_token_stream();
+                if segment_indent_str.contains("Option") {
+                    return BindgenReturnType::Option(inner_type);
                 }
+
+                errors.add_spaned(
+                    r_type.span(),
+                    format!(
+                        "Expected java_bindgen::JResult<{inner_type}> or Option<{inner_type}>",
+                    ),
+                );
+
+                return BindgenReturnType::None(TokenStream2::default());
             }
         }
     }
-    quote! {}
+    BindgenReturnType::None(TokenStream2::default())
 }
 
 
@@ -129,7 +156,7 @@ pub fn to_java_type(rust_type: &Type, errors: &mut CompileErrors) -> Option<Stri
                 return None;
             }
             add_error("&")
-        },
+        }
         Type::Slice(_) => add_error("slice"),
         Type::TraitObject(_) => add_error("trait object"),
         Type::Tuple(_) => add_error("tuple"),

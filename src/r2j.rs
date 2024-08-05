@@ -2,8 +2,22 @@ use crate::prelude::*;
 use jni::objects::JObject;
 
 // Rust to Java
-pub trait IntoJavaType<'local, T: Default>{
+pub trait IntoJavaType<'local, T> {
     fn into_java(self, env: &mut jni::JNIEnv<'local>) -> crate::JResult<T>;
+}
+
+// Option<T>
+impl<'local, T, R> IntoJavaType<'local, R> for Option<T>
+where
+    R: Default,
+    T: IntoJavaType<'local, R>
+{
+    fn into_java(self, env: &mut JNIEnv<'local>) -> JResult<R> {
+        match self {
+            None => Ok(R::default()),
+            Some(v) => v.into_java(env)
+        }
+    }
 }
 
 // Java Void
@@ -32,7 +46,7 @@ impl<'local> IntoJavaType<'local, jni::objects::JString<'local>> for jni::object
 }
 
 impl<'local> IntoJavaType<'local, jni::objects::JByteArray<'local>>
-    for jni::objects::JByteArray<'local>
+for jni::objects::JByteArray<'local>
 {
     fn into_java(
         self,

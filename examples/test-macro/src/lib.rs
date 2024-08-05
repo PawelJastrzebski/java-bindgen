@@ -3,6 +3,9 @@
 pub mod return_types {
     use java_bindgen::prelude::*;
 
+    #[java_bindgen]
+    fn returns_nothing() {}
+
     // primitives
 
     #[java_bindgen]
@@ -20,7 +23,7 @@ pub mod return_types {
     }
 
     #[java_bindgen]
-    fn returns_jint() -> JResult<jint> {
+    fn returns_jint() -> JResult<jni::sys::jint> {
         Ok(32_i32)
     }
     #[java_bindgen]
@@ -114,7 +117,7 @@ pub mod return_types {
     }
 
     #[java_bindgen]
-    fn returns_JLong() -> JResult<JLong> {
+    fn returns_JLong() -> JResult<java_bindgen::interop::JLong> {
         Ok(JLong(4))
     }
 
@@ -331,6 +334,176 @@ pub mod return_custom_type {
     #[java_bindgen]
     fn pass_java_class_embeded(object: EmbededTypes) -> JResult<EmbededTypes> {
         Ok(object)
+    }
+}
+
+pub mod custom_types_optinal {
+    use java_bindgen::prelude::*;
+
+    #[derive(Default, JavaClass)]
+    struct OptionPrimitive {
+        id: Option<i32>,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_option(object: OptionPrimitive) -> JResult<OptionPrimitive> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionClassWrapper {
+        id: Option<JInt>,
+    }
+
+    #[java_bindgen]
+    fn pass_java_class_option2(object: OptionClassWrapper) -> JResult<OptionClassWrapper> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionAllPrimitive {
+        java_b: Option<u8>,
+        java_s: Option<i16>,
+        java_i: Option<i32>,
+        java_l: Option<i64>,
+        java_f: Option<f32>,
+        java_d: Option<f64>,
+        java_c: Option<char>,
+        java_bool: Option<bool>,
+        java_string: Option<String>,
+        java_barray: Option<Vec<u8>>,
+    }
+
+    #[java_bindgen]
+    fn pass_option_all_primitives(object: OptionAllPrimitive) -> JResult<OptionAllPrimitive> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionClassWrappers {
+        java_b: Option<JByte>,
+        java_s: Option<JShort>,
+        java_i: Option<JInt>,
+        java_l: Option<JLong>,
+        java_f: Option<JFloat>,
+        java_d: Option<JDouble>,
+        java_c: Option<JChar>,
+        java_bool: Option<JBoolean>,
+    }
+
+    #[java_bindgen]
+    fn pass_option_all_class_wrappers(object: OptionClassWrappers) -> JResult<OptionClassWrappers> {
+        Ok(object)
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionNode {
+        id: Option<JInt>,
+    }
+
+    #[derive(Default, JavaClass)]
+    struct OptionElement {
+        id: Option<JInt>,
+        parent: Option<OptionNode>,
+    }
+
+    #[java_bindgen]
+    fn pass_option_element(object: OptionElement) -> JResult<OptionElement> {
+        Ok(object)
+    }
+}
+
+pub mod return_optional {
+    use java_bindgen::prelude::*;
+
+    #[java_bindgen]
+    fn return_int_optional_some() -> Option<i32> {
+        Some(10)
+    }
+
+    #[java_bindgen]
+    fn return_int_optional_none() -> Option<i32> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_JInt_optional_some() -> Option<JInt> {
+        Some(JInt(10))
+    }
+
+    #[java_bindgen]
+    fn return_JInt_optional_none() -> Option<JInt> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_str_optional_some() -> Option<String> {
+        Some("Hello".to_string())
+    }
+
+    #[java_bindgen]
+    fn return_str_optional_none() -> Option<String> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_void_optional_some() -> Option<()> {
+        Some(())
+    }
+
+    #[java_bindgen]
+    fn return_void_optional_none() -> Option<()> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_bool_optional_some() -> Option<bool> {
+        Some(true)
+    }
+
+    #[java_bindgen]
+    fn return_bool_optional_none() -> Option<bool> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_char_optional_some() -> Option<char> {
+        Some('j')
+    }
+
+    #[java_bindgen]
+    fn return_char_optional_none() -> Option<char> {
+        None
+    }
+
+    #[java_bindgen]
+    fn return_int_result_optional_some() -> JResult<Option<i32>> {
+        Ok(Some(101))
+    }
+
+    #[java_bindgen]
+    fn return_int_result_optional_none() -> JResult<Option<i32>> {
+        Ok(None)
+    }
+
+    #[java_bindgen]
+    fn return_str_result_optional_some() -> JResult<Option<String>> {
+        Ok(Some("Option<Hello>".to_string()))
+    }
+
+    #[java_bindgen]
+    fn return_str_result_optional_none() -> JResult<Option<String>> {
+        Ok(None)
+    }
+
+    #[java_bindgen]
+    fn return_list_result_optional_some() -> JResult<Option<JList<std::string::String>>> {
+        Ok(Some(JList(vec!["Option<Hello>".to_string()])))
+    }
+
+    #[java_bindgen]
+    fn return_list_result_optional_none() -> JResult<Option<JList<String>>> {
+        Ok(None)
     }
 }
 
@@ -588,9 +761,9 @@ pub mod readme_examples {
 
 #[cfg(test)]
 pub mod tests {
+    use java_bindgen::prelude::*;
     use super::input_types::*;
     use super::return_types::*;
-    use java_bindgen::prelude::*;
 
     #[test_jvm]
     fn should_input_jshort<'a>(_: &mut JNIEnv<'a>, env: JNIEnv<'a>, class: JClass) -> JResult<()> {
@@ -613,12 +786,12 @@ pub mod tests {
 
     #[test_jvm]
     fn should_return_jshort<'a>(
-        test_env: &mut JNIEnv<'a>,
+        _test_env: &mut JNIEnv<'a>,
         env: JNIEnv<'a>,
         class: JClass,
     ) -> JResult<()> {
         let result = Java_com_test_macro_TestMacro_returns_1jshort(env, class);
-        assert_eq!(result.into_rust(test_env)?, 16);
+        assert_eq!(result, 16);
         Ok(())
     }
 }

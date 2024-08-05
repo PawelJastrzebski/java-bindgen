@@ -42,6 +42,14 @@ pub fn main(item: TokenStream) -> TokenStream {
     item
 }
 
+fn is_bool_type(ty: &syn::Type) -> bool {
+    let ty_string = ty.to_token_stream().to_string().replace(" ", "");
+    if ty_string == "bool" || ty_string == "Option<bool>" {
+        return true
+    }
+    false
+}
+
 pub fn impl_into_rust(
     input: &DeriveInput,
     fields: &Vec<(syn::Ident, syn::Type)>,
@@ -53,9 +61,7 @@ pub fn impl_into_rust(
     let mut fields_getters: TokenStream2 = quote! {};
     for (name, ty) in fields.into_iter() {
         let getter_fn_name = name.to_string();
-        let ty_string = ty.to_token_stream().to_string();
-
-        let prefix = if ty_string == "bool" { "is" } else { "get" };
+        let prefix = if is_bool_type(&ty) { "is" } else { "get" };
 
         // Capital first
         let getter_name = format!(

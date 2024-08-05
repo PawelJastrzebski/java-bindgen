@@ -18,6 +18,7 @@ Develop a robust and safe framework that facilitates seamless and secure integra
 - Integrated Logger `#[derive(JLogger)]` for better debugging and logging support.
 - Rust error `stack trace` attached to Java Exceptions for improved error diagnostics.
 - Support for Java `java.util.List<E>` with Rust `JList<E>`.
+- Support for Java nullable types in Rust using `Option<T>`.
 
 <br />
 <br />
@@ -36,7 +37,7 @@ cargo install java-pack --version <version>
 ```
 Example:
 ```sh
-cargo install java-pack --version 0.1.0-alpha.2
+cargo install java-pack --version 0.1.0-alpha.3
 ```
 Add  `java-bindgen` dependency
 ```sh
