@@ -189,13 +189,14 @@ fn get_file_if_exist(file: &Path) -> Option<PathBuf> {
 
 fn find_lib(dir: &Path, lib_name: &str) -> RustBinaryInfo {
     let linux_binary = dir.join(format!("lib{lib_name}.so"));
-    let windows_binary = dir.join(format!("lib{lib_name}.dll"));
+    let win_binary = dir.join(format!("{lib_name}.dll"));
+    let win_binary_2 = dir.join(format!("{}.dll", lib_name.replace("-", "_")));
     let mac_binary = dir.join(format!("lib{lib_name}.dylib"));
 
     RustBinaryInfo {
         linux_binary_path: get_file_if_exist(&linux_binary),
         mac_binary_path: get_file_if_exist(&mac_binary),
-        windows_binary_path: get_file_if_exist(&windows_binary),
+        windows_binary_path: get_file_if_exist(&win_binary).or( get_file_if_exist(&win_binary_2)),
     }
 }
 

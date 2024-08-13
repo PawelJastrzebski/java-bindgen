@@ -3,6 +3,10 @@ use std::path::{Path, PathBuf};
 use color_eyre::eyre::Context;
 use java_bindgen_core::utils::create_or_get_dir;
 
+pub fn path_to_str(path: &Path) -> String {
+    path.to_string_lossy().replace("\\\\?\\", "")
+}
+
 pub fn create_file(
     directory: &Path,
     file_name: &str,
@@ -14,8 +18,7 @@ pub fn create_file(
 }
 
 pub fn exec_command_silent(dir: &Path, command: &str) -> (i32, String, String) {
-    let dir_path = dir.to_string_lossy();
-
+    let dir_path = path_to_str(&dir);
     if !dir.exists() || !dir.is_dir() {
         // Skip execution for invalid Paths
         return (
@@ -24,7 +27,20 @@ pub fn exec_command_silent(dir: &Path, command: &str) -> (i32, String, String) {
             format!("Directory not found: {}", dir_path),
         );
     }
-    let (code, out, err) = shells::sh!("cd {} && {}", dir_path, command);
+
+    let process = subprocess::Exec::shell(format!("cd {} && {}", dir_path, command))
+        .stdout(subprocess::Redirection::Pipe)
+        .stderr(subprocess::Redirection::Pipe)
+        .capture().expect("subprocess");
+
+    let code = match process.exit_status {
+        subprocess::ExitStatus::Exited(c) => c as i32,
+        subprocess::ExitStatus::Signaled(c) => c as i32,
+        subprocess::ExitStatus::Other(c) => c,
+        subprocess::ExitStatus::Undetermined => -1,
+    };
+
+    let (code, out, err) = (code, process.stdout_str(), process.stderr_str());
     (code, out, err)
 }
 
@@ -122,33 +138,31 @@ pub fn ready_info(is_ready: bool, label: &str) -> String {
     }
 }
 
+pub fn print_exec_command_info(command_labeol: &str, command: &str, dir_path: &str) {
+    let command_label = COLOR_WHITE.dimmed().paint(command_labeol);
+    let command = COLOR_WHITE_RGB.bold().paint(command);
+    let dri = COLOR_WHITE.dimmed().underline().paint(dir_path);
+    println!("{command_label} {command}\n{dri}\n");
+}
+
 pub fn exec_command(directory: &Path, command: &str, info: &str) -> color_eyre::Result<()> {
     let dir = create_or_get_dir(directory)?;
-    let dir_path = dir.to_string_lossy().to_string();
+    let dir_path = path_to_str(&dir);
 
-    {
-        println!("{}", header(info));
-        let command_label = COLOR_WHITE.dimmed().paint("Run: ");
-        let command = COLOR_WHITE_RGB.bold().paint(command);
-        let dri = COLOR_WHITE.dimmed().underline().paint(&dir_path);
-        println!("{command_label} {command}\n{dri}\n");
-    }
+    // Command info
+    println!("{}", header(info));
+    print_exec_command_info("Run: ", command, &dir_path);
 
     // Spawn process
 
     let command = command.replace('\n', " ").replace('\t', "");
     let mut process = subprocess::Exec::shell(format!("cd {} && {}", dir_path, command))
-        .stdout(subprocess::Redirection::Pipe)
-        .stderr(subprocess::Redirection::Merge)
+        .detached()
         .popen()?;
 
     // Read output
     while process.poll().is_none() {
         std::thread::sleep(std::time::Duration::from_millis(50));
-        let (out, _) = process.communicate(None)?;
-        if let Some(out) = out.as_ref() {
-            println!("{}", out)
-        }
     }
 
     let status_code = process.poll().expect("Status code");
