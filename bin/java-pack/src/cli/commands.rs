@@ -151,6 +151,7 @@ pub fn deploy_local(project_dir: &Path, release_mode: bool) -> color_eyre::Resul
         bail!("Jar not exist")
     };
 
+    let local_mvn_repo_dir = project_dir.join(&local_mvn_repo_dir);
     let local_mvn_repo_dir = create_or_get_dir(Path::new(&local_mvn_repo_dir))?;
 
     // Deploy jar to local repository
