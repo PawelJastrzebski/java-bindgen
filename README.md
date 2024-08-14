@@ -125,6 +125,46 @@ java-pack test
 ```
 
 <br />
+
+## Platform Support
+
+<table>
+  <tr>
+    <th colspan=2 rowspan=2>Target</th> <th align=center colspan=4><center>Build Platform</center></th>
+  </tr>
+  <tr>
+    <td>Windows</td>
+    <td>Linux</td>
+     <td>MacOS</td>
+  </tr>
+  <tr>
+  <td rowspan=3><b>JVM</b></td>
+    <td>Windows</td> <td>✅</td><td>✅*</td><td>❔</td>
+  </tr>
+  <tr>
+    <td>Linux</td> <td><b>WSL</b> 🐧</td><td>✅</td><td>❔</td>
+  </tr>
+    <tr>
+    <td>MacOS</td> <td>🚫</td><td>🚫</td><td>❔</td>
+  </tr>
+</table>
+
+**Legend**
+- ✅   Supported 
+- 🚫   Unsupported
+- ❔   No Data
+
+
+### *Linux -> Windows
+Install linker: `x86_64-w64-mingw32-gcc`
+```sh
+sudo apt install mingw-w64`
+```
+Build `.dll` and `.so`
+```sh
+cargo build --target=x86_64-pc-windows-gnu --target=x86_64-unknown-linux-gnu
+```
+
 <br />
 
 ## Safety 🛡️
@@ -134,7 +174,7 @@ Although this crate forbids `unsafe` code, the underlying `JNI` (Java Native Int
 🚨 Any Rust panic that is not handled on the Rust side will cause the JVM to crash. 🚨
 
 <br />
-<br />
+
 
 # Project 📦
 

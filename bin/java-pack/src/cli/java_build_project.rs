@@ -187,38 +187,67 @@ fn get_file_if_exist(file: &Path) -> Option<PathBuf> {
     Some(file.to_owned())
 }
 
-fn find_lib(dir: &Path, lib_name: &str) -> RustBinaryInfo {
-    let linux_binary = dir.join(format!("lib{lib_name}.so"));
-    let win_binary = dir.join(format!("{lib_name}.dll"));
-    let win_binary_2 = dir.join(format!("{}.dll", lib_name.replace("-", "_")));
-    let mac_binary = dir.join(format!("lib{lib_name}.dylib"));
+fn find_binary_file(dir: &Path, lib_name: &str, info: &mut RustBinaryInfo) {
+    if info.linux_binary_path.is_none() {
+        let linux_binary = dir.join(format!("lib{lib_name}.so"));
+        info.linux_binary_path = get_file_if_exist(&linux_binary);
+    }
 
-    RustBinaryInfo {
-        linux_binary_path: get_file_if_exist(&linux_binary),
-        mac_binary_path: get_file_if_exist(&mac_binary),
-        windows_binary_path: get_file_if_exist(&win_binary).or( get_file_if_exist(&win_binary_2)),
+    if info.windows_binary_path.is_none() {
+        let win_binary = dir.join(format!("{lib_name}.dll"));
+        let win_binary_2 = dir.join(format!("{}.dll", lib_name.replace("-", "_")));
+        info.windows_binary_path = get_file_if_exist(&win_binary).or( get_file_if_exist(&win_binary_2));
+    }
+
+    if info.mac_binary_path.is_none() {
+        let mac_binary = dir.join(format!("lib{lib_name}.dylib"));
+        info.mac_binary_path = get_file_if_exist(&mac_binary);
     }
 }
 
-pub fn find_native_lib(lib_name: &str, rust_project_path: &Path) -> RustBinaryInfo {
-    let target_dir = rust_project_path.join("target");
+pub fn look_for_binary(target_dir: &Path, lib_name: &str, result: &mut RustBinaryInfo) {
     if !target_dir.exists() {
-        return RustBinaryInfo::default();
+        return;
     }
 
-    // todo other build targets
     let release_dir = target_dir.join("release");
     let debug_dir = target_dir.join("debug");
 
     if let Ok(path) = release_dir.canonicalize() {
-        return find_lib(&path, lib_name);
+        find_binary_file(&path, lib_name, result);
+    } else if let Ok(path) = debug_dir.canonicalize() {
+        find_binary_file(&path, lib_name, result);
     };
+}
 
-    if let Ok(path) = debug_dir.canonicalize() {
-        return find_lib(&path, lib_name);
-    };
+pub fn find_native_lib(lib_name: &str, rust_project_path: &Path) -> RustBinaryInfo {
+    let mut result = RustBinaryInfo::default();
+    
 
-    RustBinaryInfo::default()
+    // x86 64
+
+    let linux = rust_project_path.join("target").join("x86_64-unknown-linux-gnu");
+    look_for_binary(&linux, lib_name, &mut result);
+
+    let windows = rust_project_path.join("target").join("x86_64-pc-windows-gnu");
+    look_for_binary(&windows, lib_name, &mut result);    
+    
+    let mac_os = rust_project_path.join("target").join("x86_64-apple-darwin");
+    look_for_binary(&mac_os, lib_name, &mut result);    
+
+    // ARM 64
+
+    let linux = rust_project_path.join("target").join("aarch64-unknown-linux-gnu");
+    look_for_binary(&linux, lib_name, &mut result);
+
+    let mac_os = rust_project_path.join("target").join("aarch64-apple-darwin");
+    look_for_binary(&mac_os, lib_name, &mut result);
+
+    // System
+    let system = rust_project_path.join("target");
+    look_for_binary(&system, lib_name, &mut result);
+
+    result
 }
 
 pub fn copy_jar_to(
