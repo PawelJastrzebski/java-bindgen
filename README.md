@@ -126,7 +126,7 @@ java-pack test
 
 <br />
 
-## Platform Support
+## Cross-Platform Build
 
 <table>
   <tr>
@@ -180,10 +180,10 @@ Although this crate forbids `unsafe` code, the underlying `JNI` (Java Native Int
 
 #### Project structure 📌
 
-- `java-bindgen` - main crate
+- `java-bindgen` - liblary
+- `java-pack` - cli tool
 - `java-bindgen-macro` - macro system
 - `java-bindgen-core` - shared lib
-- `java-pack` - building tool
 
 
 #### Project status 🚧
@@ -298,7 +298,10 @@ For full examples visit:
 <br />
 
 ## Acknowledgments 💌
-This crate strongly relies on the [jni](https://crates.io/crates/jni) crate. Without it, this project would not have been possible. A big `Thank you` to the jni crate team for their hard work and dedication!
+Thank you to the [jni](https://crates.io/crates/jni)  team!
+
+This project strongly relies on the jni crate, and without your hard work, it would not have been possible.
+
 
 <br />
 <br />
