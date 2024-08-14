@@ -21,9 +21,18 @@ const DOC_URL: &str = "https://crates.io/crates/java-pack";
 
 pub fn print_exec_info() {
     let mut iter = std::env::args().into_iter();
-    let path =  iter.next().map(|v| v.to_string()).unwrap_or_default();
+    let mut path =  iter.next().map(|v| v.to_string()).unwrap_or_default();
     let args: Vec<String> = iter.map(|a| a.to_string()).collect();
     let command = format!("java-pack {}", args.join(" "));
+
+    if cfg!(target_os = "linux") {
+        if path.trim().is_empty() || path == "java-pack" {
+            let (c, package_path, _) = cli_utils::exec_command_silent(Path::new("."), "which java-pack");
+            if c == 0 {
+                path = package_path;
+            }
+        }
+    }
 
     cli_utils::print_exec_command_info("Executing: ", &command, &path);
 }
