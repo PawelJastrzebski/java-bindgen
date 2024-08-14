@@ -37,7 +37,7 @@ cargo install java-pack --version <version>
 ```
 Example:
 ```sh
-cargo install java-pack --version 0.1.0-alpha.3
+cargo install java-pack --version 0.1.0-alpha.4
 ```
 Add  `java-bindgen` dependency
 ```sh

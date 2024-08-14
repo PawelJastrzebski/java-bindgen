@@ -1,6 +1,6 @@
 [package]
 name = "java-bindgen"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 edition = "2021"
 description = "☕ + 🦀 = ❤️‍🔥 Java JNI Bindings Generator"
 repository = "https://github.com/PawelJastrzebski/java-bindgen"
@@ -17,4 +17,4 @@ exclude = [
 
 [dependencies]
 jni = { version = "0.21", features = ["invocation"] }
-java-bindgen-macro = { version = "0.1.0-alpha.3", path = "./bin/java-bindgen-macro" }
+java-bindgen-macro = { version = "0.1.0-alpha.4", path = "./bin/java-bindgen-macro" }

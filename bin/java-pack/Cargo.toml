@@ -19,7 +19,7 @@ name = "java-pack"
 path = "./src/main.rs"
 
 [dependencies]
-java-bindgen-core = { version = "0.1.0-alpha.3", path = "../java-bindgen-core"}
+java-bindgen-core = { version = "0.1.0-alpha.4", path = "../java-bindgen-core"}
 ansi_term = "0.12"
 chrono = "0.4"
 clap = {version = "4.5", features = ["cargo"]}
