@@ -36,6 +36,7 @@ public class [[java-class-name]] {
 
         libExtension = Platform.isWindows() ? ".dll" : Platform.isMac() ? ".dylib" : ".so";
         String fullLibName = libName + libExtension;
+        String errorMsg = "Failed to load native library: " + fullLibName + "\n";
 
         try {
             File lib = Native.extractFromResourcePath(fullLibName);
@@ -43,14 +44,16 @@ public class [[java-class-name]] {
             System.load(libPath);
             loaded = true;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load native library:" + fullLibName);
+			System.out.println(errorMsg + e);
+            throw new RuntimeException(errorMsg, e);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to load native library:" + fullLibName, e);
+			System.out.println(errorMsg + e);
+            throw new RuntimeException(errorMsg, e);
         }
     }
 
     public static void main(String[] args) {
-        System.out.println("Lib: " + libName + libExtension + " (" + libVersion + ")\nPath: " + libPath + "\n" + libRelease);
+        System.out.println("Lib: " + libName + libExtension + " (" + libVersion + ")\nPath: " + libPath + "\nRelease date: " + libRelease);
     }
 
 }

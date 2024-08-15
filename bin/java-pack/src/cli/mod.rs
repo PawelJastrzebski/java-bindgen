@@ -5,7 +5,7 @@ mod java_build_project;
 mod java_templates;
 mod java_test_project;
 
-use std::path::{Path, PathBuf};
+use std::{fs, path::{Path, PathBuf}};
 
 use clap::{
     arg,
@@ -17,7 +17,30 @@ use clap::{
 };
 use cli_utils::header;
 
+const DOC_URL: &str = "https://crates.io/crates/java-pack";
+
+pub fn print_exec_info() {
+    let mut iter = std::env::args().into_iter();
+    let mut path =  iter.next().map(|v| v.to_string()).unwrap_or_default();
+    let args: Vec<String> = iter.map(|a| a.to_string()).collect();
+    let command = format!("java-pack {}", args.join(" "));
+
+    if cfg!(target_os = "linux") {
+        if path.trim().is_empty() || path == "java-pack" {
+            let (c, package_path, _) = cli_utils::exec_command_silent(Path::new("."), "which java-pack");
+            if c == 0 {
+                path = package_path;
+            }
+        }
+    }
+
+    cli_utils::print_exec_command_info("Executing: ", &command, &path);
+}
+
 pub fn cli() -> color_eyre::Result<()> {
+    // Print command
+    print_exec_info();
+
     // Setup cli
     let cli_style = Styles::styled().header(
         Style::new()
@@ -68,6 +91,7 @@ pub fn cli() -> color_eyre::Result<()> {
     } else {
         Path::new(".").to_owned()
     };
+    let project_path = fs::canonicalize(&project_path).unwrap_or(project_path);
 
     let _debug_mode = matches.get_flag("debug");
     let release_mode = matches.get_flag("release");
@@ -85,12 +109,13 @@ pub fn cli() -> color_eyre::Result<()> {
 
     // Project config guard
     if matches.subcommand().is_some() && !check_result.is_ready() {
-        println!("{}", header("Project not ready"));
-        println!("Go to the documentation for more information.\n");
-        check_result.print_status();
+        let project_path_str = cli_utils::path_to_str(&project_path);
 
-        cli_utils::sleep(1000);
-        print_help();
+        println!("{}", header("Invalid Configuration"));
+        println!("For additional details, please refer to the documentation.\n");
+        println!("Docs: {DOC_URL}");
+        println!("Project: {project_path_str}\n");
+        check_result.print_status();
         return Ok(());
     }
 
@@ -116,6 +141,5 @@ pub fn cli() -> color_eyre::Result<()> {
     if matches.subcommand().is_none() {
         print_help();
     }
-
     Ok(())
 }

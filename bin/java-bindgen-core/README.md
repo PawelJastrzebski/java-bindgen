@@ -37,7 +37,7 @@ cargo install java-pack --version <version>
 ```
 Example:
 ```sh
-cargo install java-pack --version 0.1.0-alpha.3
+cargo install java-pack --version 0.1.0-alpha.4
 ```
 Add  `java-bindgen` dependency
 ```sh
@@ -125,6 +125,46 @@ java-pack test
 ```
 
 <br />
+
+## Cross-Platform Build
+
+<table>
+  <tr>
+    <th colspan=2 rowspan=2>Target</th> <th align=center colspan=4><center>Build Platform</center></th>
+  </tr>
+  <tr>
+    <td>Windows</td>
+    <td>Linux</td>
+     <td>MacOS</td>
+  </tr>
+  <tr>
+  <td rowspan=3><b>JVM</b></td>
+    <td>Windows</td> <td>✅</td><td>✅*</td><td>❔</td>
+  </tr>
+  <tr>
+    <td>Linux</td> <td><b>WSL</b> 🐧</td><td>✅</td><td>❔</td>
+  </tr>
+    <tr>
+    <td>MacOS</td> <td>🚫</td><td>🚫</td><td>❔</td>
+  </tr>
+</table>
+
+**Legend**
+- ✅   Supported 
+- 🚫   Unsupported
+- ❔   No Data
+
+
+### *Linux -> Windows
+Install linker: `x86_64-w64-mingw32-gcc`
+```sh
+sudo apt install mingw-w64`
+```
+Build `.dll` and `.so`
+```sh
+cargo build --target=x86_64-pc-windows-gnu --target=x86_64-unknown-linux-gnu
+```
+
 <br />
 
 ## Safety 🛡️
@@ -134,16 +174,16 @@ Although this crate forbids `unsafe` code, the underlying `JNI` (Java Native Int
 🚨 Any Rust panic that is not handled on the Rust side will cause the JVM to crash. 🚨
 
 <br />
-<br />
+
 
 # Project 📦
 
 #### Project structure 📌
 
-- `java-bindgen` - main crate
+- `java-bindgen` - liblary
+- `java-pack` - cli tool
 - `java-bindgen-macro` - macro system
 - `java-bindgen-core` - shared lib
-- `java-pack` - building tool
 
 
 #### Project status 🚧
@@ -258,7 +298,10 @@ For full examples visit:
 <br />
 
 ## Acknowledgments 💌
-This crate strongly relies on the [jni](https://crates.io/crates/jni) crate. Without it, this project would not have been possible. A big `Thank you` to the jni crate team for their hard work and dedication!
+Thank you to the [jni](https://crates.io/crates/jni)  team!
+
+This project strongly relies on the jni crate, and without your hard work, it would not have been possible.
+
 
 <br />
 <br />
