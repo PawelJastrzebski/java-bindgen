@@ -116,9 +116,6 @@ pub fn cli() -> color_eyre::Result<()> {
         println!("Docs: {DOC_URL}");
         println!("Project: {project_path_str}\n");
         check_result.print_status();
-
-        // cli_utils::sleep(2000);
-        // print_help();
         return Ok(());
     }
 
@@ -144,16 +141,5 @@ pub fn cli() -> color_eyre::Result<()> {
     if matches.subcommand().is_none() {
         print_help();
     }
-
     Ok(())
-}
-
-
-#[cfg(test)]
-pub mod tests {
-
-    #[test]
-    fn test() {
-        println!("{:?}", std::env::args());
-    }
 }
