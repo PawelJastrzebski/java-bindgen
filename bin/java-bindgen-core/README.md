@@ -180,7 +180,7 @@ Although this crate forbids `unsafe` code, the underlying `JNI` (Java Native Int
 
 #### Project structure 📌
 
-- `java-bindgen` - liblary
+- `java-bindgen` - lib
 - `java-pack` - cli tool
 - `java-bindgen-macro` - macro system
 - `java-bindgen-core` - shared lib
