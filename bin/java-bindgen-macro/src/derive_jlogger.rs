@@ -1,11 +1,11 @@
-use crate::util::{self, CompileErrors};
+use crate::util::{self, detect_project_dir, CompileErrors};
 use java_bindgen_core::project_info::ProjectInfo;
 use proc_macro::TokenStream;
 use quote::quote;
 
 pub fn main(item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<syn::DeriveInput>(item.clone()) {
-        let project_dir = std::path::Path::new(".");
+        let project_dir = detect_project_dir();
         let mut errors = CompileErrors::default();
 
         // Struct Guard
@@ -15,7 +15,7 @@ pub fn main(item: TokenStream) -> TokenStream {
         };
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(project_dir) {
+        let cargo_toml = match util::parse_project_toml(&project_dir) {
             Ok(toml) => toml,
             Err(err) => {
                 return util::error(input.ident.span(), err.to_string()).into();

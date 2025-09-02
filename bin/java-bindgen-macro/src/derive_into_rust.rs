@@ -7,11 +7,11 @@ use quote::{quote, ToTokens, TokenStreamExt};
 use syn::{Data, DeriveInput};
 use syn::__private::TokenStream2;
 
-use crate::util::{ts2, CompileErrors};
+use crate::util::{detect_project_dir, ts2, CompileErrors};
 
 pub fn main(item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<DeriveInput>(item.clone()) {
-        let project_dir = std::path::Path::new(".");
+        let project_dir = detect_project_dir();
         let mut errors = CompileErrors::default();
         let name = &input.ident;
 
@@ -28,7 +28,7 @@ pub fn main(item: TokenStream) -> TokenStream {
             return errors.into();
         };
 
-        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
+        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
             store.add_ffi_class(JavaFFIClass {
                 id: name.to_string(),
                 fields: java_fields,

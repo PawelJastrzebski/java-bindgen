@@ -12,7 +12,7 @@ use crate::{
         produce_java_args, produce_java_return, produce_rust_args_names, produce_rust_result_type,
     },
     types_conversion::rewrite_rust_type_to_jni,
-    util::{self, parse_attr_to_map, ts2, CompileErrors},
+    util::{self, detect_project_dir, parse_attr_to_map, ts2, CompileErrors},
 };
 use crate::common::BindgenReturnType;
 
@@ -155,10 +155,10 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(java_fn) = syn::parse::<syn::ItemFn>(item.clone()) {
         let source = TokenStream2::from(item.clone());
         let attribute = JavaBindgenAttr::parse_attr(attr.clone());
-        let project_dir = std::path::Path::new(".");
+        let project_dir = detect_project_dir();
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(project_dir) {
+        let cargo_toml = match util::parse_project_toml(&project_dir) {
             Ok(toml) => toml,
             Err(err) => {
                 let error = util::error(java_fn.span(), err.to_string());
@@ -175,7 +175,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         let return_type = produce_rust_result_type(&java_fn.sig.output, &mut errors);
 
         // Safe FFI Methods
-        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
+        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
             let args = produce_java_args(&java_fn.sig.inputs, &mut errors);
             let return_type = attribute
                 .returns

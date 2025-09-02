@@ -8,11 +8,11 @@ use quote::quote;
 use syn::{Data, DeriveInput};
 use syn::__private::TokenStream2;
 
-use crate::util::{self, CompileErrors};
+use crate::util::{self, detect_project_dir, CompileErrors};
 
 pub fn main(item: TokenStream) -> TokenStream {
     if let Ok(input) = syn::parse::<DeriveInput>(item.clone()) {
-        let project_dir = std::path::Path::new(".");
+        let project_dir = detect_project_dir();
         let mut errors = CompileErrors::default();
 
         // Struct Guard
@@ -22,7 +22,7 @@ pub fn main(item: TokenStream) -> TokenStream {
         };
 
         // Parse Cargo.toml file
-        let cargo_toml = match util::parse_project_toml(project_dir) {
+        let cargo_toml = match util::parse_project_toml(&project_dir) {
             Ok(toml) => toml,
             Err(err) => {
                 return util::error(input.ident.span(), err.to_string()).into();
@@ -37,7 +37,7 @@ pub fn main(item: TokenStream) -> TokenStream {
             return errors.into();
         };
 
-        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(project_dir)) {
+        if let Some(mut store) = FFIStore::read_from_file(&ffi_definitions_path(&project_dir)) {
             store.add_ffi_class(JavaFFIClass {
                 id: input.ident.to_string(),
                 fields: java_fields,

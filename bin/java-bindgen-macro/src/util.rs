@@ -110,3 +110,9 @@ pub fn lifetime_from_type(ty: &syn::Type) -> Option<TokenStream2> {
 
     None
 }
+
+/// Detect project directory based on cargo manifest directory.
+pub fn detect_project_dir() -> std::path::PathBuf {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+    std::path::PathBuf::from(&manifest_dir)
+}
